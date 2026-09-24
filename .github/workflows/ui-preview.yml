@@ -1,0 +1,68 @@
+name: ui-preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "preview_seed.py"
+      - ".github/workflows/ui-preview.yml"
+      - "ez_expedite/**"
+      - "app.py"
+      - "requirements.txt"
+
+jobs:
+  preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create preview virtual environment
+        shell: pwsh
+        run: |
+          python -m venv .venv-preview
+          .\.venv-preview\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv-preview\Scripts\python.exe -m pip install -r requirements.txt
+      - name: Seed synthetic preview data
+        shell: pwsh
+        run: .\.venv-preview\Scripts\python.exe preview_seed.py
+      - name: Start EZ Expedite from virtual environment
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ".\.venv-preview\Scripts\python.exe" -ArgumentList "app.py" -PassThru
+          $p.Id | Out-File -FilePath app.pid
+          $ready = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep -Seconds 1
+            try {
+              $health = Invoke-RestMethod -Uri "http://127.0.0.1:5050/health" -TimeoutSec 2
+              if ($health.status -eq "ok") { $ready = $true; break }
+            } catch {}
+          }
+          if (-not $ready) { throw "EZ Expedite preview server did not become healthy." }
+      - name: Capture actual UI
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ui-preview | Out-Null
+          $edge = Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"
+          if (-not (Test-Path $edge)) {
+            $edge = Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"
+          }
+          if (-not (Test-Path $edge)) { throw "Microsoft Edge not found." }
+
+          & $edge --headless --disable-gpu --hide-scrollbars --window-size=1600,1000 --screenshot="$pwd\ui-preview\dashboard.png" "http://127.0.0.1:5050/"
+          if (-not (Test-Path ".\ui-preview\dashboard.png")) { throw "Dashboard screenshot was not created." }
+
+          & $edge --headless --disable-gpu --hide-scrollbars --window-size=1600,1100 --screenshot="$pwd\ui-preview\rma-detail.png" "http://127.0.0.1:5050/occurrence/1"
+          if (-not (Test-Path ".\ui-preview\rma-detail.png")) { throw "RMA detail screenshot was not created." }
+
+          $pidText = Get-Content app.pid
+          if ($pidText) { Stop-Process -Id ([int]$pidText) -Force -ErrorAction SilentlyContinue }
+      - name: Upload actual UI preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: EZ_Expedite-Actual-UI
+          path: ui-preview/*.png
+          if-no-files-found: error
