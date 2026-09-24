@@ -90,7 +90,22 @@ CREATE TABLE IF NOT EXISTS rma_details (
     credit_memo_number TEXT,
     debit_memo_number TEXT,
     sales_comment TEXT,
-    customer_discrepancy TEXT
+    customer_discrepancy TEXT,
+    rma_stage TEXT NOT NULL DEFAULT 'INTAKE',
+    csr_name TEXT,
+    defect_type TEXT,
+    contact_name TEXT,
+    contact_phone TEXT,
+    received_from_customer TEXT,
+    hold_area_confirmed INTEGER NOT NULL DEFAULT 0,
+    product_reviewed INTEGER NOT NULL DEFAULT 0,
+    work_order_required TEXT,
+    work_order_issued TEXT,
+    final_quality_result TEXT,
+    approved_to_ship TEXT,
+    ready_to_ship TEXT,
+    shipped_to_customer INTEGER NOT NULL DEFAULT 0,
+    returned_to_customer_date TEXT
 );
 
 CREATE TABLE IF NOT EXISTS activities (
@@ -214,8 +229,27 @@ def init_db(db_path: str | Path) -> None:
     with sqlite3.connect(db_path) as con:
         con.executescript(SCHEMA)
         columns = {row[1] for row in con.execute("PRAGMA table_info(rma_details)").fetchall()}
-        if "rma_number" not in columns:
-            con.execute("ALTER TABLE rma_details ADD COLUMN rma_number TEXT")
+        rma_migrations = {
+            "rma_number": "TEXT",
+            "rma_stage": "TEXT NOT NULL DEFAULT 'INTAKE'",
+            "csr_name": "TEXT",
+            "defect_type": "TEXT",
+            "contact_name": "TEXT",
+            "contact_phone": "TEXT",
+            "received_from_customer": "TEXT",
+            "hold_area_confirmed": "INTEGER NOT NULL DEFAULT 0",
+            "product_reviewed": "INTEGER NOT NULL DEFAULT 0",
+            "work_order_required": "TEXT",
+            "work_order_issued": "TEXT",
+            "final_quality_result": "TEXT",
+            "approved_to_ship": "TEXT",
+            "ready_to_ship": "TEXT",
+            "shipped_to_customer": "INTEGER NOT NULL DEFAULT 0",
+            "returned_to_customer_date": "TEXT",
+        }
+        for column, definition in rma_migrations.items():
+            if column not in columns:
+                con.execute(f"ALTER TABLE rma_details ADD COLUMN {column} {definition}")
         con.execute(
             """UPDATE rma_details
                SET rma_number=quality_no
@@ -233,6 +267,24 @@ def init_db(db_path: str | Path) -> None:
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('setup_complete','0')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('m365_tenant','organizations')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('expediter_interval_minutes','30')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_mode','dark')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_accent','#1F6FBC')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_accent_strong','#0B3A75')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_background','#090B0E')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_panel','#11161C')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_card','#171E26')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_text','#F4F7FB')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_muted','#9BA8B7')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_name','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_name','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_name','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_quality','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_operations','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_customer_service','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_design','')")
         con.commit()
 
 
