@@ -168,6 +168,25 @@ def stage_message(row, stage_key: str, read_only: bool = False, url: str = "") -
     return "\n".join(lines)
 
 
+def notification_package(con, occurrence_id: int, stage_key: str) -> dict:
+    row = con.execute(
+        """SELECT o.*,r.* FROM occurrences o
+           JOIN rma_details r ON r.occurrence_id=o.id
+           WHERE o.id=?""",
+        (occurrence_id,),
+    ).fetchone()
+    if not row:
+        return {"delegates": [], "cc": [], "primary_message": "", "cc_message": ""}
+    delegates = stage_delegates(con, stage_key)
+    url = occurrence_url(con, occurrence_id)
+    return {
+        "delegates": delegates,
+        "cc": cc_recipients(con),
+        "primary_message": stage_message(row, stage_key, False, url),
+        "cc_message": stage_message(row, stage_key, True, url),
+    }
+
+
 def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
     row = con.execute(
         """SELECT o.*,r.* FROM occurrences o
@@ -201,18 +220,11 @@ def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
         f"{stage_info(current).label} -> {stage_info(new_stage).label}.",
         actor,
     )
-    refreshed = con.execute(
-        """SELECT o.*,r.* FROM occurrences o JOIN rma_details r ON r.occurrence_id=o.id WHERE o.id=?""",
-        (occurrence_id,),
-    ).fetchone()
-    url = occurrence_url(con, occurrence_id)
+    package = notification_package(con, occurrence_id, new_stage)
     return {
         "ok": True,
         "new_stage": new_stage,
-        "delegates": delegates,
-        "cc": cc_recipients(con),
-        "primary_message": stage_message(refreshed, new_stage, False, url),
-        "cc_message": stage_message(refreshed, new_stage, True, url),
+        **package,
     }
 
 
