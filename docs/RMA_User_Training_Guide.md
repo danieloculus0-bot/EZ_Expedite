@@ -3,6 +3,77 @@
 Application version: **0.1.1**  
 Guide revision: **1.0**
 
+## Quick Start
+
+Use this section for day-to-day operation.
+
+### If you receive an RMA Action Required notification
+
+1. Open the Teams message.
+2. Select **Open RMA**.
+3. Sign in with Microsoft 365 if prompted.
+4. Confirm the page shows **Action Required** for your department.
+5. Complete the required fields for the current stage.
+6. Add a progress note if there is useful status information.
+7. Select **Complete / Advance**.
+8. If EZ Expedite shows a blocker, complete the missing requirement and try again.
+9. When the stage advances successfully, the next department is assigned and notified automatically.
+
+### If the page says Read Only
+
+You are not a primary delegate for the current stage.
+
+- Review the RMA as needed.
+- Do not attempt to advance it.
+- Contact the current primary department if action is required.
+
+### Current RMA routing
+
+```text
+Customer Service
+  Intake
+      ↓
+Shipping
+  Product Returned to WMF
+      ↓
+Quality
+  RMA Review
+      ↓
+Shipping
+  Product Returned to Customer
+      ↓
+Complete / Closure
+```
+
+### What each primary does
+
+| Department | Stage | Primary action |
+| --- | --- | --- |
+| Customer Service | Intake | Enter RMA/customer/contact/defect information and advance |
+| Shipping | Product Returned to WMF | Confirm receipt and RMA hold-area placement |
+| Quality | RMA Review | Review product and document work-order requirements |
+| Shipping | Product Returned to Customer | Complete final inspection/shipping confirmations and advance |
+
+### Past-due work
+
+- Use the dashboard aging heatmap to see how old overdue items are.
+- The heatmap uses **blue shades only**.
+- Add progress notes when status changes.
+- Responsible users receive one grouped past-due Teams digest per day rather than one message per overdue occurrence.
+
+### Need to find an RMA?
+
+Use the dashboard search box and search by:
+
+- RMA Number
+- EZ Expedite case number
+- customer
+- part
+- owner
+- description
+
+---
+
 ## Quick answers
 
 ### How does the designee advance the notification?
