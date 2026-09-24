@@ -348,7 +348,15 @@ Next action: {request.form.get('next_action','')}""",
         else ""
     )
 
-    body = f"""<h1>{e(row['case_number'])}</h1><div class='toolbar'>{source_email}</div><div class='split'><div>
+    workflow_ui = ""
+    if row["type_name"] == "RMA":
+        _actor_name, current_email = _user_identity()
+        with connect(db_path()) as con:
+            delegates = stage_delegates(con, row["rma_stage"] or "INTAKE")
+            allowed = can_advance(con, row["rma_stage"] or "INTAKE", current_email)
+        workflow_ui = _rma_workflow_ui(row, allowed, delegates)
+
+    body = f"""<h1>{e(row['case_number'])}</h1><div class='toolbar'>{source_email}</div>{workflow_ui}<div class='split'><div>
     <form method='post'>{common}{rma}</form><br>
     <div class='panel'><h2>Closure Checklist</h2><form method='post' action='/occurrence/{oid}/checklist' class='form'>
     {checklist_html}<label>Completed by<input name='actor'></label><div class='wide'><button>Update checklist</button></div></form></div><br>
@@ -366,6 +374,140 @@ Next action: {request.form.get('next_action','')}""",
     <label class='wide'>Message<textarea name='body' required></textarea></label><div><button>Send</button></div></form></div>
     </div><div class='panel'><h2>Activity</h2>{activity_html}</div></div>"""
     return page(row["case_number"], body)
+
+
+
+@bp.route("/occurrence/<int:oid>/progress", methods=["POST"])
+def progress(oid):
+    detail = request.form.get("detail", "").strip()
+    if detail:
+        actor_name, actor_email = _user_identity()
+        actor = actor_name or actor_email
+        with connect(db_path()) as con:
+            log_activity(con, oid, "PROGRESS", detail, actor)
+    return redirect(request.referrer or url_for("core.dashboard"))
+
+
+@bp.route("/occurrence/<int:oid>/rma/action", methods=["POST"])
+def rma_action(oid):
+    actor_name, actor_email = _user_identity()
+    if not actor_email:
+        flash("Microsoft 365 sign-in is required to complete an RMA action.")
+        return redirect(url_for("occurrence.occurrence", oid=oid))
+
+    with connect(db_path()) as con:
+        row = con.execute(
+            """SELECT o.*,r.* FROM occurrences o JOIN rma_details r ON r.occurrence_id=o.id
+               WHERE o.id=?""",
+            (oid,),
+        ).fetchone()
+        if not row:
+            return page("Not found", "<div class='panel'>RMA not found.</div>"), 404
+        stage = row["rma_stage"] or "INTAKE"
+        if not can_advance(con, stage, actor_email):
+            flash("This action is read only for the connected user.")
+            return redirect(url_for("occurrence.occurrence", oid=oid))
+
+        if stage == "INTAKE":
+            con.execute(
+                """UPDATE occurrences SET customer=?,purchase_order=?,description=?,updated_at=? WHERE id=?""",
+                (
+                    request.form.get("customer", "").strip(),
+                    request.form.get("purchase_order", "").strip(),
+                    request.form.get("notes", "").strip(),
+                    utcnow(),
+                    oid,
+                ),
+            )
+            con.execute(
+                """UPDATE rma_details SET rma_number=?,defect_type=?,csr_name=?,contact_name=?,contact_phone=?,sales_comment=?
+                   WHERE occurrence_id=?""",
+                (
+                    request.form.get("rma_number", "").strip() or None,
+                    request.form.get("defect_type", "").strip() or None,
+                    request.form.get("csr_name", "").strip() or None,
+                    request.form.get("contact_name", "").strip() or None,
+                    request.form.get("contact_phone", "").strip() or None,
+                    request.form.get("notes", "").strip() or None,
+                    oid,
+                ),
+            )
+        elif stage == "AWAITING CUSTOMER RETURN":
+            received = request.form.get("received_from_customer", "").strip().upper()
+            receive_date = request.form.get("receive_date", "").strip() or (date.today().isoformat() if received == "YES" else None)
+            con.execute(
+                """UPDATE rma_details SET received_from_customer=?,receive_date=?,hold_area_confirmed=?
+                   WHERE occurrence_id=?""",
+                (received or None, receive_date, truth(request.form.get("hold_area_confirmed")), oid),
+            )
+        elif stage == "RMA REVIEW":
+            con.execute(
+                """UPDATE occurrences SET work_order=?,updated_at=? WHERE id=?""",
+                (request.form.get("work_order", "").strip(), utcnow(), oid),
+            )
+            con.execute(
+                """UPDATE rma_details SET product_reviewed=?,work_order_required=?,work_order_issued=?
+                   WHERE occurrence_id=?""",
+                (
+                    truth(request.form.get("product_reviewed")),
+                    request.form.get("work_order_required", "").strip().upper() or None,
+                    request.form.get("work_order_issued", "").strip().upper() or None,
+                    oid,
+                ),
+            )
+        elif stage == "RETURN TO CUSTOMER":
+            shipped = truth(request.form.get("shipped_to_customer"))
+            shipped_date = request.form.get("returned_to_customer_date", "").strip() or (date.today().isoformat() if shipped else None)
+            con.execute(
+                """UPDATE rma_details SET final_quality_result=?,approved_to_ship=?,ready_to_ship=?,
+                   shipped_to_customer=?,returned_to_customer_date=? WHERE occurrence_id=?""",
+                (
+                    request.form.get("final_quality_result", "").strip().upper() or None,
+                    request.form.get("approved_to_ship", "").strip().upper() or None,
+                    request.form.get("ready_to_ship", "").strip().upper() or None,
+                    shipped,
+                    shipped_date,
+                    oid,
+                ),
+            )
+
+        note = request.form.get("progress_note", "").strip()
+        if note:
+            log_activity(con, oid, "PROGRESS", note, actor_name or actor_email)
+
+        result = advance_rma(con, oid, actor_name or actor_email)
+        if not result.get("ok"):
+            for blocker in result.get("blockers", []):
+                flash(blocker)
+            return redirect(url_for("occurrence.occurrence", oid=oid))
+
+    delivery_errors = 0
+    try:
+        client = m365()
+        primary_emails = set()
+        for delegate in result.get("delegates", []):
+            email = str(delegate.get("email") or "").strip().lower()
+            if not email:
+                continue
+            primary_emails.add(email)
+            try:
+                client.send_teams_message(email, result["primary_message"])
+            except Exception:
+                delivery_errors += 1
+        for email in result.get("cc", []):
+            email = str(email or "").strip().lower()
+            if not email or email in primary_emails:
+                continue
+            try:
+                client.send_teams_message(email, result["cc_message"])
+            except Exception:
+                delivery_errors += 1
+    except Exception:
+        delivery_errors += 1
+
+    if delivery_errors:
+        flash(f"Stage advanced. {delivery_errors} Teams notification(s) failed.")
+    return redirect(url_for("occurrence.occurrence", oid=oid))
 
 
 @bp.route("/occurrence/<int:oid>/checklist", methods=["POST"])
