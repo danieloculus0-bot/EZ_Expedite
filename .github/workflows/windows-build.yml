@@ -1,5 +1,8 @@
 name: windows-build
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -108,3 +111,24 @@ jobs:
           name: EZ_Expedite-Installer
           path: dist-installer/EZ_Expedite_Setup_*.exe
           if-no-files-found: error
+
+      - name: Publish Windows installer release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v0.1.1
+        run: |
+          $setup = Get-ChildItem ".\dist-installer\EZ_Expedite_Setup_0.1.1.exe" | Select-Object -First 1
+          if (-not $setup) { throw "Release installer was not created." }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f $env:RELEASE_TAG $env:GITHUB_SHA
+          git push -f origin "refs/tags/$env:RELEASE_TAG"
+
+          gh release view $env:RELEASE_TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:RELEASE_TAG $setup.FullName --clobber
+          } else {
+            gh release create $env:RELEASE_TAG $setup.FullName --title "EZ Expedite 0.1.1" --notes "Windows installer. Python and application dependencies are bundled." --latest
+          }
