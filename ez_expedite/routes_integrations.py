@@ -216,13 +216,15 @@ def expedite_now():
         )
     if client:
         flash(
-            f"Expediter checked {result['checked']} open occurrences and sent {result['sent']} Teams reminders. "
-            f"Unassigned: {result['unassigned']}; due without next action: {result['due_without_action']}; errors: {result['errors']}."
+            f"Checked {result['checked']} open occurrences. Past-due items: {result['overdue_items']}. "
+            f"Daily digests sent: {result['digests_sent']}. Unassigned: {result['unassigned']}. "
+            f"Due without next action: {result['due_without_action']}. Errors: {result['errors']}."
         )
     else:
         flash(
-            f"Expediter checked {result['checked']} open occurrences. Microsoft 365 is not connected, so no Teams reminders were sent. "
-            f"Unassigned: {result['unassigned']}; due without next action: {result['due_without_action']}."
+            f"Checked {result['checked']} open occurrences. Past-due items: {result['overdue_items']}. "
+            f"Microsoft 365 is not connected. Unassigned: {result['unassigned']}. "
+            f"Due without next action: {result['due_without_action']}."
         )
     return redirect(url_for("core.dashboard"))
 
