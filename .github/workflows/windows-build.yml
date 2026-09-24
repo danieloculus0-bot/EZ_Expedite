@@ -1,0 +1,59 @@
+name: windows-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.py"
+      - "requirements*.txt"
+      - "build_windows.ps1"
+      - ".github/workflows/windows-build.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-build.txt
+      - name: Smoke test
+        run: python smoke_test.py
+      - name: Pre-release functional test
+        run: python pre_release_test.py
+      - name: Build standalone EXE
+        run: python -m PyInstaller --noconfirm --clean --onefile --console --name EZ_Expedite desktop.py
+      - name: Launch-test packaged EXE
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ".\dist\EZ_Expedite.exe" -PassThru
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 1
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:5050/health" -TimeoutSec 2
+                if ($health.status -eq "ok" -and $health.app -eq "EZ Expedite") {
+                  $ready = $true
+                  break
+                }
+              } catch {}
+            }
+            if (-not $ready) { throw "Packaged EZ_Expedite.exe did not become healthy." }
+            $setup = Invoke-WebRequest -Uri "http://127.0.0.1:5050/setup" -UseBasicParsing -TimeoutSec 5
+            if ($setup.StatusCode -ne 200) { throw "Packaged setup page did not return HTTP 200." }
+          }
+          finally {
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          }
+      - name: Upload standalone Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: EZ_Expedite-Windows
+          path: dist/EZ_Expedite.exe
+          if-no-files-found: error
