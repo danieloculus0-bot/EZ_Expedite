@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import Callable
 
 from .db import utcnow
+from .rma_workflow import stage_delegates
 
 Notifier = Callable[[str, str], None]
 
@@ -50,9 +51,10 @@ def _digest_message(items: list[dict], today: date) -> str:
 def run_expeditor(con, notify_teams: Notifier | None = None, today: date | None = None) -> dict[str, int]:
     today = today or date.today()
     rows = con.execute(
-        """SELECT o.*,t.name type_name
+        """SELECT o.*,t.name type_name,r.rma_stage
            FROM occurrences o
            JOIN occurrence_types t ON t.id=o.occurrence_type_id
+           LEFT JOIN rma_details r ON r.occurrence_id=o.id
            WHERE o.status!='CLOSED'"""
     ).fetchall()
     result = {
@@ -79,22 +81,32 @@ def run_expeditor(con, notify_teams: Notifier | None = None, today: date | None 
             result["due_without_action"] += 1
 
         days = overdue_days(row["due_date"], today)
-        recipient = str(row["owner_email"] or "").strip().lower()
-        if days <= 0 or not recipient:
+        if days <= 0:
+            continue
+
+        recipients = []
+        if row["type_name"] == "RMA":
+            recipients = [
+                d["email"] for d in stage_delegates(con, row["rma_stage"] or "INTAKE") if d.get("email")
+            ]
+        if not recipients and row["owner_email"]:
+            recipients = [str(row["owner_email"]).strip().lower()]
+        recipients = list(dict.fromkeys(x.strip().lower() for x in recipients if x and x.strip()))
+        if not recipients:
             continue
 
         result["overdue_items"] += 1
-        overdue_by_owner[recipient].append(
-            {
-                "id": row["id"],
-                "case_number": row["case_number"],
-                "type_name": row["type_name"],
-                "title": row["title"],
-                "next_action": row["next_action"],
-                "days_overdue": days,
-                "last_note": _latest_progress(con, row["id"]),
-            }
-        )
+        payload = {
+            "id": row["id"],
+            "case_number": row["case_number"],
+            "type_name": row["type_name"],
+            "title": row["title"],
+            "next_action": row["next_action"],
+            "days_overdue": days,
+            "last_note": _latest_progress(con, row["id"]),
+        }
+        for recipient in recipients:
+            overdue_by_owner[recipient].append(payload)
 
     if notify_teams is None:
         return result
