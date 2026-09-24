@@ -71,7 +71,7 @@ def main() -> None:
                 "title": "Buy replacement inspection light",
                 "owner_name": "Buyer",
                 "owner_email": "buyer@example.com",
-                "due_date": (date.today() + timedelta(days=1)).isoformat(),
+                "due_date": (date.today() - timedelta(days=1)).isoformat(),
                 "next_action": "Place PO",
             },
             follow_redirects=False,
@@ -97,14 +97,14 @@ def main() -> None:
                 notify_teams=lambda recipient, message: sent.append((recipient, message)),
                 today=date.today(),
             )
-            assert result["sent"] == 1
+            assert result["digests_sent"] == 1
             assert sent and sent[0][0] == "buyer@example.com"
             result2 = run_expeditor(
                 con,
                 notify_teams=lambda recipient, message: sent.append((recipient, message)),
                 today=date.today(),
             )
-            assert result2["sent"] == 0
+            assert result2["digests_sent"] == 0
 
         workbook_path = root / "generic.xlsx"
         wb = Workbook()
