@@ -11,9 +11,6 @@ from ez_expedite.expediter import run_expeditor
 from ez_expedite.helpers import db_path, m365
 from ez_expedite.web import create_app
 
-HOST = "127.0.0.1"
-PORT = 5050
-
 
 def expeditor_worker(app):
     time.sleep(20)
@@ -41,12 +38,23 @@ def expeditor_worker(app):
 
 def main():
     app = create_app()
+    with app.app_context():
+        with connect(db_path()) as con:
+            host = get_setting(con, "listen_host", "127.0.0.1") or "127.0.0.1"
+            try:
+                port = int(get_setting(con, "listen_port", "5050") or "5050")
+            except ValueError:
+                port = 5050
+
     threading.Thread(target=expeditor_worker, args=(app,), daemon=True).start()
-    threading.Timer(1.25, lambda: webbrowser.open(f"http://{HOST}:{PORT}")).start()
+    local_url = f"http://127.0.0.1:{port}"
+    threading.Timer(1.25, lambda: webbrowser.open(local_url)).start()
     print("EZ Expedite is running.")
-    print(f"Open http://{HOST}:{PORT}")
+    print(f"Local: {local_url}")
+    if host == "0.0.0.0":
+        print(f"Network listener: port {port}")
     print("Close this window to stop EZ Expedite.")
-    serve(app, host=HOST, port=PORT, threads=8)
+    serve(app, host=host, port=port, threads=12)
 
 
 if __name__ == "__main__":
