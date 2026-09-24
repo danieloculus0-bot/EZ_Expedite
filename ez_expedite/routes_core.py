@@ -17,7 +17,12 @@ from .db import (
 )
 from .helpers import PRIORITIES, STATUSES, db_path, e, m365, page, profile, safe_hex
 from .m365 import M365Error
-from .rma_workflow import assign_stage_owner, stage_info
+from .rma_workflow import (
+    assign_stage_owner,
+    deliver_notifications,
+    notification_package,
+    stage_info,
+)
 
 bp = Blueprint("core", __name__)
 
@@ -507,6 +512,7 @@ def new_occurrence():
             )
             oid = int(cur.lastrowid)
             tname = con.execute("SELECT name FROM occurrence_types WHERE id=?", (tid,)).fetchone()[0]
+            initial_rma_package = None
             if tname == "RMA":
                 con.execute(
                     "INSERT INTO rma_details(occurrence_id,recovery_status) VALUES(?,?)",
@@ -517,8 +523,18 @@ def new_occurrence():
                     "UPDATE occurrences SET next_action=?,updated_at=? WHERE id=?",
                     (stage_info("INTAKE").action, utcnow(), oid),
                 )
+                initial_rma_package = notification_package(con, oid, "INTAKE")
             ensure_checklist_items(con, oid, tid)
             log_activity(con, oid, "CREATE", f"{tname} occurrence created.", request.form.get("owner_name", ""))
+        if request.method == "POST":
+            if initial_rma_package:
+                try:
+                    client = m365()
+                    failed = deliver_notifications(initial_rma_package, client.send_teams_message)
+                    if failed:
+                        flash(f"{failed} Teams notification(s) failed.")
+                except Exception:
+                    flash("RMA created, but Teams notifications could not be sent.")
             return redirect(url_for("occurrence.occurrence", oid=oid))
     opts = "".join(f"<option value='{x['id']}'>{e(x['name'])}</option>" for x in types)
     priorities = "".join(f"<option>{x}</option>" for x in PRIORITIES)
