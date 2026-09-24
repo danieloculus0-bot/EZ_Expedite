@@ -6,7 +6,8 @@ from pathlib import Path
 
 from flask import Flask, redirect, request, url_for
 
-from .db import init_db
+from .auth import signed_in_user
+from .db import connect, get_setting, init_db
 from .helpers import setup_done
 from .routes_core import bp as core_bp
 from .routes_integrations import bp as integrations_bp
@@ -45,9 +46,35 @@ def create_app(test_config=None):
     app.register_blueprint(integrations_bp)
 
     @app.before_request
-    def first_run_gate():
-        if request.endpoint not in {"core.setup", "core.m365_connect", "health", "static"} and not setup_done():
+    def access_gate():
+        endpoint = request.endpoint or ""
+        setup_exempt = {"core.setup", "core.m365_connect", "health", "static"}
+        auth_exempt = {"core.auth_login", "core.auth_callback", "core.auth_logout"}
+        if endpoint not in setup_exempt and endpoint not in auth_exempt and not setup_done():
             return redirect(url_for("core.setup"))
+
+        if not setup_done():
+            return None
+
+        with connect(app.config["DB_PATH"]) as con:
+            multi_user = get_setting(con, "multi_user_mode", "1") == "1"
+
+        if not multi_user:
+            return None
+
+        if endpoint in auth_exempt or endpoint == "health":
+            return None
+
+        if endpoint in {"core.setup", "core.m365_connect"}:
+            if request.remote_addr in {"127.0.0.1", "::1"}:
+                return None
+            if signed_in_user():
+                return None
+            return redirect(url_for("core.auth_login"))
+
+        if not signed_in_user():
+            return redirect(url_for("core.auth_login"))
+        return None
 
     @app.route("/health")
     def health():
