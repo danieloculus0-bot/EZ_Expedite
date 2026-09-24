@@ -11,3 +11,7 @@ instance/
 *.csv
 *.log
 .DS_Store
+.venv-build/
+dist/
+dist-installer/
+*.spec
