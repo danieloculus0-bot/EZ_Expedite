@@ -12,6 +12,7 @@ from .generic_import import CORE_FIELDS, auto_mapping, import_generic_file, read
 from .helpers import db_path, e, m365, page
 from .importers import import_rma_workbook
 from .m365 import M365Error
+from .rma_workflow import assign_stage_owner, stage_info
 
 bp = Blueprint("integrations", __name__)
 
@@ -305,6 +306,11 @@ def mail_create():
         oid = int(cur.lastrowid)
         if type_row["name"] == "RMA":
             con.execute("INSERT INTO rma_details(occurrence_id,recovery_status) VALUES(?,?)", (oid, "NOT REQUIRED"))
+            assign_stage_owner(con, oid, "INTAKE")
+            con.execute(
+                "UPDATE occurrences SET next_action=?,updated_at=? WHERE id=?",
+                (stage_info("INTAKE").action, utcnow(), oid),
+            )
         ensure_checklist_items(con, oid, type_id)
         con.execute(
             """INSERT INTO occurrence_emails(
