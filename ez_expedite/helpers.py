@@ -209,7 +209,7 @@ BASE = """<!doctype html>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <meta name='color-scheme' content='dark'>
 <title>{{title}} | EZ Expedite</title>
-<style>{{css}}{{theme_css}}</style>
+<style>{{css|safe}}{{theme_css|safe}}</style>
 </head>
 <body>
 <header class='appbar'>
