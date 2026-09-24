@@ -23,8 +23,12 @@ RMA is the first configured occurrence type, but the core application is generic
 The intended end-user distribution is:
 
 ```text
-EZ_Expedite_Setup_0.1.0.exe
+EZ_Expedite_Setup_0.1.1.exe
 ```
+
+Direct installer download:
+
+https://github.com/danieloculus0-bot/EZ_Expedite/releases/download/v0.1.1/EZ_Expedite_Setup_0.1.1.exe
 
 The installer is per-user and normally does not require administrator rights.
 
@@ -105,7 +109,7 @@ Text:            #F4F7FB
 Muted text:      #9BA8B7
 ```
 
-The interface intentionally uses one theme color family rather than multicolored status buttons.
+The interface intentionally uses one theme color family rather than multicolored status buttons. The aging heatmap uses shades of the configured accent blue only.
 
 The Appearance page allows the following colors to be changed without editing code:
 
@@ -788,7 +792,7 @@ Run:
 Output:
 
 ```text
-dist-installer\EZ_Expedite_Setup_0.1.0.exe
+dist-installer\EZ_Expedite_Setup_0.1.1.exe
 ```
 
 The installer recipient does not need Python or Inno Setup.
