@@ -55,6 +55,7 @@ def main() -> None:
 
         with connect(db) as con:
             con.execute("UPDATE settings SET value='1' WHERE key='setup_complete'")
+            con.execute("UPDATE settings SET value='0' WHERE key='multi_user_mode'")
 
         assert client.get("/").status_code == 200
         assert client.get("/occurrence/new").status_code == 200
