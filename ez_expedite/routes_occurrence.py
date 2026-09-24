@@ -376,29 +376,48 @@ Next action: {request.form.get('next_action','')}""",
     )
 
     workflow_ui = ""
+    editable = True
     if row["type_name"] == "RMA":
         _actor_name, current_email = _user_identity()
         with connect(db_path()) as con:
             delegates = stage_delegates(con, row["rma_stage"] or "INTAKE")
             allowed = can_advance(con, row["rma_stage"] or "INTAKE", current_email)
+        editable = allowed
         workflow_ui = _rma_workflow_ui(row, allowed, delegates)
 
+    if editable:
+        details_section = f"<form method='post'>{common}{rma}</form>"
+        checklist_section = f"""<div class='panel'><h2>Closure Checklist</h2><form method='post' action='/occurrence/{oid}/checklist' class='form'>
+        {checklist_html}<label>Completed by<input name='actor'></label><div class='wide'><button>Update checklist</button></div></form></div>"""
+        attachments_section = f"""<div class='panel'><h2>Attachments</h2>{attachment_html}<br><form method='post' action='/occurrence/{oid}/attachment' enctype='multipart/form-data' class='form'>
+        <label>File<input type='file' name='attachment' required></label><label>Uploaded by<input name='actor'></label><div><br><button>Attach file</button></div></form></div>"""
+        refs_section = f"""<div class='panel'><h2>ERP / External References</h2>{ref_html}<br><form method='post' action='/occurrence/{oid}/external' class='form'>
+        <label>System<input name='system_name' placeholder='JobBOSS2'></label><label>Record type<input name='entity_type' placeholder='Job / PO / Sales Order'></label>
+        <label>External ID<input name='external_id' required></label><label>URL<input type='url' name='external_url'></label>
+        <label class='wide'>Note<input name='note'></label><div><button>Add reference</button></div></form></div>"""
+        activity_entry = f"""<div class='panel'><h2>Add Activity</h2><form method='post' action='/occurrence/{oid}/activity' class='form'>
+        <label>Type<input name='activity_type' value='NOTE'></label><label>Actor<input name='actor'></label>
+        <label class='wide'>Detail<textarea name='detail' required></textarea></label><div><button>Add</button></div></form></div>"""
+        email_section = f"""<div class='panel'><h2>Outlook</h2><form method='post' action='/occurrence/{oid}/email' class='form'>
+        <label>To<input type='email' name='to' required></label><label>Subject<input name='subject' value='{e(row['case_number'])}: {e(row['title'])}'></label>
+        <label class='wide'>Message<textarea name='body' required></textarea></label><div><button>Send</button></div></form></div>"""
+    else:
+        disabled_common = common.replace("<input ", "<input disabled ").replace("<select ", "<select disabled ").replace("<textarea ", "<textarea disabled ")
+        disabled_common = disabled_common.replace(
+            "<div class='toolbar'><button>Save</button><button name='notify_owner' value='1'>Save + notify new owner in Teams</button>\n    <a class='btn secondary' href='/occurrence/{oid}/close'>Close</a></div>",
+            ""
+        )
+        disabled_rma = rma.replace("<input ", "<input disabled ").replace("<select ", "<select disabled ").replace("<textarea ", "<textarea disabled ")
+        details_section = disabled_common + disabled_rma
+        checklist_section = f"<div class='panel'><h2>Closure Checklist</h2>{checklist_html.replace('<input ', '<input disabled ')}</div>"
+        attachments_section = f"<div class='panel'><h2>Attachments</h2>{attachment_html}</div>"
+        refs_section = f"<div class='panel'><h2>ERP / External References</h2>{ref_html}</div>"
+        activity_entry = ""
+        email_section = ""
+
     body = f"""<h1>{e(row['case_number'])}</h1><div class='toolbar'>{source_email}</div>{workflow_ui}<div class='split'><div>
-    <form method='post'>{common}{rma}</form><br>
-    <div class='panel'><h2>Closure Checklist</h2><form method='post' action='/occurrence/{oid}/checklist' class='form'>
-    {checklist_html}<label>Completed by<input name='actor'></label><div class='wide'><button>Update checklist</button></div></form></div><br>
-    <div class='panel'><h2>Attachments</h2>{attachment_html}<br><form method='post' action='/occurrence/{oid}/attachment' enctype='multipart/form-data' class='form'>
-    <label>File<input type='file' name='attachment' required></label><label>Uploaded by<input name='actor'></label><div><br><button>Attach file</button></div></form></div><br>
-    <div class='panel'><h2>ERP / External References</h2>{ref_html}<br><form method='post' action='/occurrence/{oid}/external' class='form'>
-    <label>System<input name='system_name' placeholder='JobBOSS2'></label><label>Record type<input name='entity_type' placeholder='Job / PO / Sales Order'></label>
-    <label>External ID<input name='external_id' required></label><label>URL<input type='url' name='external_url'></label>
-    <label class='wide'>Note<input name='note'></label><div><button>Add reference</button></div></form></div><br>
-    <div class='panel'><h2>Add activity</h2><form method='post' action='/occurrence/{oid}/activity' class='form'>
-    <label>Type<input name='activity_type' value='NOTE'></label><label>Actor<input name='actor'></label>
-    <label class='wide'>Detail<textarea name='detail' required></textarea></label><div><button>Add</button></div></form></div><br>
-    <div class='panel'><h2>Send Outlook update</h2><form method='post' action='/occurrence/{oid}/email' class='form'>
-    <label>To<input type='email' name='to' required></label><label>Subject<input name='subject' value='{e(row['case_number'])}: {e(row['title'])}'></label>
-    <label class='wide'>Message<textarea name='body' required></textarea></label><div><button>Send</button></div></form></div>
+    {details_section}<br>{checklist_section}<br>{attachments_section}<br>{refs_section}
+    {'<br>'+activity_entry if activity_entry else ''}{'<br>'+email_section if email_section else ''}
     </div><div class='panel'><h2>Activity</h2>{activity_html}</div></div>"""
     return page(row["case_number"], body)
 
