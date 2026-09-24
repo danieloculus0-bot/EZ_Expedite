@@ -198,7 +198,7 @@ def main() -> None:
                 "priority": "High",
                 "status": "NEW",
                 "next_action": "Confirm supplier ship date",
-                "due_date": (date.today() + timedelta(days=1)).isoformat(),
+                "due_date": (date.today() - timedelta(days=1)).isoformat(),
             },
             follow_redirects=False,
         )
@@ -242,7 +242,7 @@ def main() -> None:
                     "priority": "High",
                     "status": "INVESTIGATING",
                     "next_action": "Get confirmed truck date",
-                    "due_date": (date.today() + timedelta(days=1)).isoformat(),
+                    "due_date": (date.today() - timedelta(days=1)).isoformat(),
                     f"custom_{field['id']}": "Production Supervisor",
                     "notify_owner": "1",
                 },
@@ -356,14 +356,14 @@ def main() -> None:
                     notify_teams=fake.send_teams_message,
                     today=date.today(),
                 )
-                assert result["sent"] >= 1
+                assert result["digests_sent"] >= 1
                 sent_after_first = len(fake.teams)
                 result2 = run_expeditor(
                     con,
                     notify_teams=fake.send_teams_message,
                     today=date.today(),
                 )
-                assert result2["sent"] == 0
+                assert result2["digests_sent"] == 0
                 assert len(fake.teams) == sent_after_first
 
             # 10. Actual closure after required fields/checklist are complete.
