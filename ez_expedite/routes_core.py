@@ -14,7 +14,7 @@ from .db import (
     set_setting,
     utcnow,
 )
-from .helpers import PRIORITIES, STATUSES, db_path, e, m365, page, profile
+from .helpers import PRIORITIES, STATUSES, db_path, e, m365, page, profile, safe_hex
 from .m365 import M365Error
 
 bp = Blueprint("core", __name__)
@@ -72,7 +72,8 @@ def m365_connect():
 
 @bp.route("/")
 def dashboard():
-    today = date.today().isoformat()
+    today_obj = date.today()
+    today = today_obj.isoformat()
     stale = (datetime.utcnow() - timedelta(days=7)).replace(microsecond=0).isoformat() + "Z"
     q = request.args.get("q", "").strip()
     type_filter = request.args.get("type", "").strip()
@@ -100,7 +101,36 @@ def dashboard():
         money = con.execute(
             "SELECT COALESCE(SUM(recovery_requested),0)-COALESCE(SUM(recovery_received),0) FROM rma_details"
         ).fetchone()[0]
-        sql = """SELECT o.*,t.name type_name,r.rma_number,r.quality_no
+
+        overdue_rows = con.execute(
+            """SELECT due_date FROM occurrences
+               WHERE status!='CLOSED' AND due_date IS NOT NULL AND due_date<?""",
+            (today,),
+        ).fetchall()
+        aging = {"1-3 days": 0, "4-7 days": 0, "8-14 days": 0, "15-30 days": 0, "31+ days": 0}
+        for item in overdue_rows:
+            try:
+                days = (today_obj - datetime.strptime(item["due_date"], "%Y-%m-%d").date()).days
+            except (TypeError, ValueError):
+                continue
+            if days <= 3:
+                aging["1-3 days"] += 1
+            elif days <= 7:
+                aging["4-7 days"] += 1
+            elif days <= 14:
+                aging["8-14 days"] += 1
+            elif days <= 30:
+                aging["15-30 days"] += 1
+            else:
+                aging["31+ days"] += 1
+
+        sql = """SELECT o.*,t.name type_name,r.rma_number,r.quality_no,
+                 (SELECT a.detail FROM activities a
+                    WHERE a.occurrence_id=o.id AND a.activity_type IN ('PROGRESS','NOTE')
+                    ORDER BY a.id DESC LIMIT 1) last_note,
+                 (SELECT a.created_at FROM activities a
+                    WHERE a.occurrence_id=o.id AND a.activity_type IN ('PROGRESS','NOTE')
+                    ORDER BY a.id DESC LIMIT 1) last_note_at
                  FROM occurrences o
                  JOIN occurrence_types t ON t.id=o.occurrence_type_id
                  LEFT JOIN rma_details r ON r.occurrence_id=o.id
@@ -118,8 +148,10 @@ def dashboard():
         if status_filter:
             sql += " AND o.status=?"
             params.append(status_filter)
-        sql += """ ORDER BY CASE o.priority WHEN 'Critical' THEN 0 WHEN 'High' THEN 1 ELSE 2 END,
+        sql += """ ORDER BY CASE WHEN o.due_date IS NOT NULL AND o.due_date<? THEN 0 ELSE 1 END,
+                   CASE o.priority WHEN 'Critical' THEN 0 WHEN 'High' THEN 1 ELSE 2 END,
                    CASE WHEN o.due_date IS NULL THEN 1 ELSE 0 END,o.due_date,o.id DESC LIMIT 500"""
+        params.append(today)
         rows = con.execute(sql, params).fetchall()
         types = con.execute("SELECT name FROM occurrence_types WHERE active=1 ORDER BY name").fetchall()
 
@@ -127,15 +159,38 @@ def dashboard():
         f"<div class='card metric'><span>{e(k)}</span><b>{v}</b></div>" for k, v in metrics.items()
     ) + f"<div class='card metric'><span>Recovery Outstanding</span><b>$" + f"{max(float(money or 0),0):,.0f}</b></div>"
 
-    tr = "".join(
-        f"""<tr>
-        <td><a href='/occurrence/{r['id']}'>{e(r['case_number'])}</a><br><span class='muted'>{e(r['rma_number'])}</span></td>
-        <td>{e(r['type_name'])}</td><td>{e(r['title'])}</td><td>{e(r['owner_name'] or r['owner_email'])}</td>
-        <td><span class='status'>{e(r['status'])}</span></td>
-        <td class='{"bad" if r['due_date'] and r['due_date'] < today else ""}'>{e(r['due_date'])}</td><td>{e(r['next_action'])}</td>
-        </tr>"""
-        for r in rows
+    heat = "".join(
+        f"<div class='aging-cell heat-{i}'><span>{e(label)}</span><b>{count}</b></div>"
+        for i, (label, count) in enumerate(aging.items(), start=1)
     )
+
+    table_rows = []
+    for row in rows:
+        overdue = 0
+        if row["due_date"]:
+            try:
+                overdue = max((today_obj - datetime.strptime(row["due_date"], "%Y-%m-%d").date()).days, 0)
+            except ValueError:
+                overdue = 0
+        age_text = f"{overdue}d past due" if overdue else e(row["due_date"])
+        note = e(row["last_note"]) if row["last_note"] else "<span class='muted'>No progress note</span>"
+        progress = f"""<div class='note-preview'>{note}</div>
+        <form class='quick-note' method='post' action='/occurrence/{row["id"]}/progress'>
+          <input name='detail' placeholder='Progress note' required>
+          <button>Save</button>
+        </form>"""
+        table_rows.append(
+            f"""<tr>
+            <td><a href='/occurrence/{row['id']}'>{e(row['case_number'])}</a><br><span class='muted'>{e(row['rma_number'])}</span></td>
+            <td>{e(row['type_name'])}</td><td>{e(row['title'])}</td>
+            <td>{e(row['owner_name'] or row['owner_email'])}</td>
+            <td><span class='status'>{e(row['status'])}</span></td>
+            <td class='{"bad" if overdue else ""}'>{age_text}</td>
+            <td>{e(row['next_action'])}</td><td>{progress}</td>
+            </tr>"""
+        )
+    tr = "".join(table_rows)
+
     type_options = "<option value=''>All types</option>" + "".join(
         f"<option {'selected' if type_filter==x['name'] else ''}>{e(x['name'])}</option>" for x in types
     )
@@ -143,20 +198,22 @@ def dashboard():
         f"<option {'selected' if status_filter==x else ''}>{e(x)}</option>" for x in STATUSES if x != "CLOSED"
     )
     filters = f"""<form method='get' class='form panel'>
-      <label>Search<input name='q' value='{e(q)}' placeholder='case, RMA number, customer, part, owner, description...'></label>
+      <label>Search<input name='q' value='{e(q)}' placeholder='Case, RMA number, customer, part, owner'></label>
       <label>Type<select name='type'>{type_options}</select></label>
       <label>Status<select name='status'>{status_options}</select></label>
       <div><br><button>Filter</button> <a class='btn secondary' href='/'>Clear</a></div>
     </form>"""
+
     return page(
         "Dashboard",
-        f"""<h1>Expedite Dashboard</h1><div class='grid'>{cards}</div>
+        f"""<h1>Dashboard</h1><div class='grid'>{cards}</div>
+        <div class='section-head' style='margin-top:20px'><h2 style='margin:0'>Past Due Aging</h2></div>
+        <div class='aging-grid'>{heat}</div>
         <div class='toolbar'><a class='btn' href='/occurrence/new'>New occurrence</a>
-        <a class='btn secondary' href='/expedite/run'>Run Expediter</a>
-        <a class='btn secondary' href='/mail/inbox'>Review Outlook inbox</a></div>
+        <a class='btn secondary' href='/expedite/run'>Run notifications</a></div>
         {filters}<br><div class='panel table'><table><tr><th>Case</th><th>Type</th><th>Occurrence</th>
-        <th>Owner</th><th>Status</th><th>Due</th><th>Next action</th></tr>
-        {tr or '<tr><td colspan=7>No matching open occurrences.</td></tr>'}</table></div>""",
+        <th>Owner</th><th>Status</th><th>Due / Age</th><th>Next action</th><th>Progress</th></tr>
+        {tr or '<tr><td colspan=8>No matching open occurrences.</td></tr>'}</table></div>""",
     )
 
 
@@ -265,6 +322,90 @@ def type_config(type_id):
         <label><input type='checkbox' name='required' checked> Required before closure</label><div><br><button>Add checklist item</button></div>
         </form><br><table><tr><th>Item</th><th>Required</th></tr>{check_rows or '<tr><td colspan=2>No checklist templates.</td></tr>'}</table></div>""",
     )
+
+
+@bp.route("/appearance", methods=["GET", "POST"])
+def appearance():
+    keys = {
+        "theme_accent": "#1F6FBC",
+        "theme_accent_strong": "#0B3A75",
+        "theme_background": "#090B0E",
+        "theme_panel": "#11161C",
+        "theme_card": "#171E26",
+        "theme_text": "#F4F7FB",
+        "theme_muted": "#9BA8B7",
+    }
+    with connect(db_path()) as con:
+        if request.method == "POST":
+            for key, fallback in keys.items():
+                set_setting(con, key, safe_hex(request.form.get(key, fallback), fallback))
+            flash("Appearance saved.")
+            return redirect(url_for("core.appearance"))
+        values = {key: get_setting(con, key, fallback) for key, fallback in keys.items()}
+    fields = "".join(
+        f"<label>{e(label)}<input type='color' name='{key}' value='{e(values[key])}'></label>"
+        for key, label in [
+            ("theme_accent", "Accent blue"),
+            ("theme_accent_strong", "Deep blue"),
+            ("theme_background", "Background"),
+            ("theme_panel", "Panel"),
+            ("theme_card", "Card"),
+            ("theme_text", "Text"),
+            ("theme_muted", "Muted text"),
+        ]
+    )
+    return page("Appearance", f"""<h1>Appearance</h1><form method='post' class='panel'>
+      <div class='color-row'>{fields}</div><div class='toolbar'><button>Save</button></div>
+    </form>""")
+
+
+@bp.route("/rma/workflow", methods=["GET", "POST"])
+def rma_workflow_settings():
+    role_fields = [
+        ("csr", "Customer Service"),
+        ("shipping", "Shipping"),
+        ("quality", "Quality"),
+    ]
+    cc_fields = [
+        ("quality", "Quality"),
+        ("operations", "Operations"),
+        ("customer_service", "Customer Service"),
+        ("design", "Design"),
+    ]
+    with connect(db_path()) as con:
+        if request.method == "POST":
+            for key, _label in role_fields:
+                for suffix in ("", "_2"):
+                    set_setting(con, f"rma_role_{key}_name{suffix}", request.form.get(f"{key}_name{suffix}", "").strip())
+                    set_setting(con, f"rma_role_{key}_email{suffix}", request.form.get(f"{key}_email{suffix}", "").strip().lower())
+            for key, _label in cc_fields:
+                set_setting(con, f"rma_cc_{key}", request.form.get(f"cc_{key}", "").strip().lower())
+            flash("RMA workflow recipients saved.")
+            return redirect(url_for("core.rma_workflow_settings"))
+        role_values = {}
+        for key, _label in role_fields:
+            for suffix in ("", "_2"):
+                role_values[f"{key}_name{suffix}"] = get_setting(con, f"rma_role_{key}_name{suffix}", "")
+                role_values[f"{key}_email{suffix}"] = get_setting(con, f"rma_role_{key}_email{suffix}", "")
+        cc_values = {key: get_setting(con, f"rma_cc_{key}", "") for key, _ in cc_fields}
+
+    roles = "".join(
+        f"""<div class='card'><h2>{e(label)}</h2><div class='form'>
+        <label>Primary 1 name<input name='{key}_name' value='{e(role_values[key+"_name"])}'></label>
+        <label>Primary 1 email<input type='email' name='{key}_email' value='{e(role_values[key+"_email"])}'></label>
+        <label>Primary 2 name<input name='{key}_name_2' value='{e(role_values[key+"_name_2"])}'></label>
+        <label>Primary 2 email<input type='email' name='{key}_email_2' value='{e(role_values[key+"_email_2"])}'></label>
+        </div></div>"""
+        for key, label in role_fields
+    )
+    ccs = "".join(
+        f"<label>{e(label)} CC<input name='cc_{key}' value='{e(cc_values[key])}' placeholder='email@example.com; second@example.com'></label>"
+        for key, label in cc_fields
+    )
+    return page("RMA Workflow", f"""<h1>RMA Workflow</h1><form method='post'>
+      <div class='grid'>{roles}</div><br><div class='panel'><h2>Read-only CC recipients</h2>
+      <div class='form'>{ccs}</div></div><div class='toolbar'><button>Save</button></div>
+    </form>""")
 
 
 @bp.route("/occurrence/new", methods=["GET", "POST"])
