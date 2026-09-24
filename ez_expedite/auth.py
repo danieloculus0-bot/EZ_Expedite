@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
 from flask import current_app, request, session
 
 from .db import connect, get_setting
-from .helpers import db_path
 
 SCOPES = ["User.Read"]
 
@@ -17,7 +17,7 @@ class AuthConfigError(RuntimeError):
 
 
 def _settings() -> dict:
-    with connect(db_path()) as con:
+    with connect(Path(current_app.config["DB_PATH"])) as con:
         return {
             "client_id": os.environ.get("M365_CLIENT_ID") or get_setting(con, "m365_client_id", ""),
             "tenant": os.environ.get("M365_TENANT") or get_setting(con, "m365_tenant", "organizations"),
