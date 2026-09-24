@@ -281,7 +281,7 @@ def init_db(db_path: str | Path) -> None:
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('multi_user_mode','1')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('listen_host','127.0.0.1')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('listen_port','5050')")
-        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('expediter_interval_minutes','30')"
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('expediter_interval_minutes','30')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_mode','dark')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_accent','#1F6FBC')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_accent_strong','#0B3A75')")
