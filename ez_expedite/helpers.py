@@ -51,7 +51,7 @@ a:hover{color:var(--text)}
 .brandblock{display:flex;align-items:center;gap:10px;white-space:nowrap}
 .brandmark{width:10px;height:30px;border-radius:999px;background:var(--accent)}
 .brand{font-size:20px;font-weight:760;letter-spacing:-.025em;color:var(--text)}
-.tagline{font-size:12px;color:var(--muted)}
+
 nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 nav a{
   color:var(--muted);padding:7px 9px;border-radius:10px;font-size:13px;
@@ -192,7 +192,7 @@ BASE = """<!doctype html>
 </head>
 <body>
 <header class='appbar'>
-  <div class='brandblock'><span class='brandmark'></span><div><a class='brand' href='/'>EZ Expedite</a><div class='tagline'>Own it. Move it. Close it.</div></div></div>
+  <div class='brandblock'><span class='brandmark'></span><a class='brand' href='/'>EZ Expedite</a></div>
   <nav>
     <a href='/'>Dashboard</a><a href='/occurrence/new'>New</a><a href='/types'>Types</a>
     <a href='/import/generic'>Import</a><a href='/import/rma'>RMA Import</a>
