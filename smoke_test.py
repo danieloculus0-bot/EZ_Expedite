@@ -6,10 +6,11 @@ from pathlib import Path
 
 from openpyxl import Workbook
 
-from ez_expedite.db import connect, generic_close_blockers, init_db
+from ez_expedite.db import connect, generic_close_blockers, init_db, set_setting
 from ez_expedite.expediter import run_expeditor
 from ez_expedite.generic_import import import_generic_file
 from ez_expedite.importers import RMA_NUMBER_ALIASES
+from ez_expedite.rma_workflow import can_advance, deliver_notifications, notification_package
 from ez_expedite.web import create_app
 
 
@@ -143,6 +144,60 @@ def main() -> None:
                 external_id_column="Ticket ID",
             )
             assert result["updated"] == 1
+
+        with connect(db) as con:
+            rma_type = con.execute("SELECT id FROM occurrence_types WHERE name='RMA'").fetchone()[0]
+            set_setting(con, "rma_role_csr_name", "Primary One")
+            set_setting(con, "rma_role_csr_email", "primary1@example.com")
+            set_setting(con, "rma_role_csr_name_2", "Primary Two")
+            set_setting(con, "rma_role_csr_email_2", "primary2@example.com")
+            set_setting(con, "rma_cc_quality", "readonly@example.com")
+            set_setting(con, "public_base_url", "http://ez-expedite.local")
+            now = "2026-09-24T00:00:00Z"
+            cur = con.execute(
+                """INSERT INTO occurrences(
+                   case_number,occurrence_type_id,title,customer,priority,status,next_action,created_date,
+                   last_activity_at,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    "RMA-2026-TEST",
+                    rma_type,
+                    "Synthetic RMA routing test",
+                    "Test Customer",
+                    "Normal",
+                    "NEW",
+                    "Complete intake fields.",
+                    "2026-09-24",
+                    now,
+                    now,
+                    now,
+                ),
+            )
+            rma_oid = int(cur.lastrowid)
+            con.execute(
+                """INSERT INTO rma_details(
+                   occurrence_id,rma_number,rma_stage,recovery_status)
+                   VALUES(?,?,?,?)""",
+                (rma_oid, "TEST-RMA-ROUTE", "INTAKE", "NOT REQUIRED"),
+            )
+            package = notification_package(con, rma_oid, "INTAKE")
+            assert len(package["delegates"]) == 2
+            assert can_advance(con, "INTAKE", "primary1@example.com")
+            assert can_advance(con, "INTAKE", "primary2@example.com")
+            assert not can_advance(con, "INTAKE", "readonly@example.com")
+            assert "RMA - ACTION REQUIRED" in package["primary_message"]
+            assert "RMA UPDATE - READ ONLY" in package["cc_message"]
+            assert "http://ez-expedite.local/occurrence/" in package["primary_message"]
+            routed = []
+            errors = deliver_notifications(package, lambda recipient, message: routed.append((recipient, message)))
+            assert errors == 0
+            assert {x[0] for x in routed} == {
+                "primary1@example.com",
+                "primary2@example.com",
+                "readonly@example.com",
+            }
+            assert all("ACTION REQUIRED" in msg for email, msg in routed if email.startswith("primary"))
+            assert "READ ONLY" in next(msg for email, msg in routed if email == "readonly@example.com")
 
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
