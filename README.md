@@ -1,8 +1,6 @@
 # EZ Expedite
 
-**Own it. Move it. Close it.**
-
-EZ Expedite is a standalone occurrence-expediting application for anything that can get lost between "somebody needs to handle this" and actual closure.
+EZ Expedite is a standalone occurrence tracking and expediting application.
 
 RMA is the first configured occurrence type because that is the original use case. The core engine is intentionally generic. A shop can use the same application for:
 
