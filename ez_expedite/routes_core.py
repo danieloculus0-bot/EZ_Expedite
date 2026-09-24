@@ -48,8 +48,15 @@ def setup():
         public_base_url = os.environ.get("EZ_EXPEDITE_PUBLIC_BASE_URL") or get_setting(con, "public_base_url", "")
         multi_user_mode = get_setting(con, "multi_user_mode", "1") == "1"
         expedite_interval = get_setting(con, "expediter_interval_minutes", "30")
-    p = profile()
-    state = f"Connected: {e(p.get('displayName') or p.get('userPrincipalName'))}" if p else "Outlook and Teams are not connected."
+    try:
+        notification_profile = m365().me()
+    except Exception:
+        notification_profile = None
+    state = (
+        f"Notification account: {e(notification_profile.get('displayName') or notification_profile.get('userPrincipalName'))}"
+        if notification_profile
+        else "Notification account not connected."
+    )
     body = f"""
     <h1>Microsoft 365 Setup</h1>
     <div class='panel'>
