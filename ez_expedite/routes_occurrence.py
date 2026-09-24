@@ -179,8 +179,12 @@ def occurrence(oid):
         if request.method == "POST":
             if _deny_rma_write(con, oid):
                 return redirect(url_for("occurrence.occurrence", oid=oid))
+            is_rma = base["type_name"] == "RMA"
             old_owner = base["owner_email"]
-            owner = request.form.get("owner_email", "").strip()
+            owner = base["owner_email"] if is_rma else request.form.get("owner_email", "").strip()
+            owner_name = base["owner_name"] if is_rma else request.form.get("owner_name", "")
+            status_value = base["status"] if is_rma else request.form.get("status", "NEW")
+            next_action_value = base["next_action"] if is_rma else request.form.get("next_action", "")
             now = utcnow()
             con.execute(
                 """UPDATE occurrences SET
@@ -200,11 +204,11 @@ def occurrence(oid):
                     request.form.get("purchase_order", ""),
                     request.form.get("department", ""),
                     request.form.get("work_center", ""),
-                    request.form.get("owner_name", ""),
+                    owner_name,
                     owner,
                     request.form.get("priority", "Normal"),
-                    request.form.get("status", "NEW"),
-                    request.form.get("next_action", ""),
+                    status_value,
+                    next_action_value,
                     request.form.get("due_date") or None,
                     now,
                     oid,
@@ -300,6 +304,13 @@ Next action: {request.form.get('next_action','')}""",
     statuses = "".join(f"<option {'selected' if row['status']==x else ''}>{x}</option>" for x in STATUSES)
     priorities = "".join(f"<option {'selected' if row['priority']==x else ''}>{x}</option>" for x in PRIORITIES)
     custom_html = "".join(_custom_control(x) for x in custom)
+    workflow_locked = row["type_name"] == "RMA"
+    locked_attr = "disabled" if workflow_locked else ""
+    if workflow_locked:
+        close_action = f"<a class='btn secondary' href='/occurrence/{oid}/close'>Close</a>" if (row["rma_stage"] or "INTAKE") == "COMPLETE" else ""
+        detail_actions = f"<button>Save Details</button>{close_action}"
+    else:
+        detail_actions = f"<button>Save</button><button name='notify_owner' value='1'>Save + Notify Owner</button><a class='btn secondary' href='/occurrence/{oid}/close'>Close</a>"
 
     common = f"""<div class='panel'><h2>{e(row['case_number'])} | {e(row['type_name'])}</h2><div class='form'>
     <label class='wide'>Title<input name='title' value='{e(row['title'])}'></label>
@@ -309,12 +320,11 @@ Next action: {request.form.get('next_action','')}""",
     <label>Revision<input name='revision' value='{e(row['revision'])}'></label><label>Work order<input name='work_order' value='{e(row['work_order'])}'></label>
     <label>Sales order<input name='sales_order' value='{e(row['sales_order'])}'></label><label>Purchase order<input name='purchase_order' value='{e(row['purchase_order'])}'></label>
     <label>Department<input name='department' value='{e(row['department'])}'></label><label>Work center<input name='work_center' value='{e(row['work_center'])}'></label>
-    <label>Owner name<input name='owner_name' value='{e(row['owner_name'])}'></label><label>Owner email<input type='email' name='owner_email' value='{e(row['owner_email'])}'></label>
-    <label>Priority<select name='priority'>{priorities}</select></label><label>Status<select name='status'>{statuses}</select></label>
+    <label>Owner name<input {locked_attr} name='owner_name' value='{e(row['owner_name'])}'></label><label>Owner email<input {locked_attr} type='email' name='owner_email' value='{e(row['owner_email'])}'></label>
+    <label>Priority<select name='priority'>{priorities}</select></label><label>Status<select {locked_attr} name='status'>{statuses}</select></label>
     <label>Due date<input type='date' name='due_date' value='{e(row['due_date'])}'></label>
-    <label class='wide'>Next action<input name='next_action' value='{e(row['next_action'])}'></label>{custom_html}
-    </div><div class='toolbar'><button>Save</button><button name='notify_owner' value='1'>Save + notify new owner in Teams</button>
-    <a class='btn secondary' href='/occurrence/{oid}/close'>Close</a></div></div>"""
+    <label class='wide'>Next action<input {locked_attr} name='next_action' value='{e(row['next_action'])}'></label>{custom_html}
+    </div><div class='toolbar'>{detail_actions}</div></div>"""
 
     rma = ""
     if row["type_name"] == "RMA":
@@ -403,10 +413,7 @@ Next action: {request.form.get('next_action','')}""",
         <label class='wide'>Message<textarea name='body' required></textarea></label><div><button>Send</button></div></form></div>"""
     else:
         disabled_common = common.replace("<input ", "<input disabled ").replace("<select ", "<select disabled ").replace("<textarea ", "<textarea disabled ")
-        disabled_common = disabled_common.replace(
-            "<div class='toolbar'><button>Save</button><button name='notify_owner' value='1'>Save + notify new owner in Teams</button>\n    <a class='btn secondary' href='/occurrence/{oid}/close'>Close</a></div>",
-            ""
-        )
+        disabled_common = disabled_common.replace(f"<div class='toolbar'>{detail_actions}</div>", "")
         disabled_rma = rma.replace("<input ", "<input disabled ").replace("<select ", "<select disabled ").replace("<textarea ", "<textarea disabled ")
         details_section = disabled_common + disabled_rma
         checklist_section = f"<div class='panel'><h2>Closure Checklist</h2>{checklist_html.replace('<input ', '<input disabled ')}</div>"
