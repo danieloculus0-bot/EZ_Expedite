@@ -52,11 +52,42 @@ jobs:
           }
           if (-not (Test-Path $edge)) { throw "Microsoft Edge not found." }
 
-          & $edge --headless --disable-gpu --hide-scrollbars --window-size=1600,1000 --screenshot="$pwd\ui-preview\dashboard.png" "http://127.0.0.1:5050/"
-          if (-not (Test-Path ".\ui-preview\dashboard.png")) { throw "Dashboard screenshot was not created." }
+          $dash = Join-Path $pwd "ui-preview\dashboard.png"
+          $detail = Join-Path $pwd "ui-preview\rma-detail.png"
+          $profile = Join-Path $env:RUNNER_TEMP "edge-preview-profile"
 
-          & $edge --headless --disable-gpu --hide-scrollbars --window-size=1600,1100 --screenshot="$pwd\ui-preview\rma-detail.png" "http://127.0.0.1:5050/occurrence/1"
-          if (-not (Test-Path ".\ui-preview\rma-detail.png")) { throw "RMA detail screenshot was not created." }
+          $args1 = @(
+            "--headless=new",
+            "--disable-gpu",
+            "--hide-scrollbars",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--user-data-dir=$profile",
+            "--window-size=1600,1000",
+            "--screenshot=$dash",
+            "http://127.0.0.1:5050/"
+          )
+          $edge1 = Start-Process -FilePath $edge -ArgumentList $args1 -Wait -PassThru
+          if ($edge1.ExitCode -ne 0) { throw "Edge dashboard capture failed with code $($edge1.ExitCode)." }
+          Start-Sleep -Seconds 1
+          if (-not (Test-Path $dash)) { throw "Dashboard screenshot was not created." }
+
+          Remove-Item -Recurse -Force $profile -ErrorAction SilentlyContinue
+          $args2 = @(
+            "--headless=new",
+            "--disable-gpu",
+            "--hide-scrollbars",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--user-data-dir=$profile",
+            "--window-size=1600,1100",
+            "--screenshot=$detail",
+            "http://127.0.0.1:5050/occurrence/1"
+          )
+          $edge2 = Start-Process -FilePath $edge -ArgumentList $args2 -Wait -PassThru
+          if ($edge2.ExitCode -ne 0) { throw "Edge detail capture failed with code $($edge2.ExitCode)." }
+          Start-Sleep -Seconds 1
+          if (-not (Test-Path $detail)) { throw "RMA detail screenshot was not created." }
 
           $pidText = Get-Content app.pid
           if ($pidText) { Stop-Process -Id ([int]$pidText) -Force -ErrorAction SilentlyContinue }
