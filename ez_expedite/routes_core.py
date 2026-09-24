@@ -5,6 +5,7 @@ import os
 
 from flask import Blueprint, flash, redirect, request, url_for
 
+from .auth import AuthConfigError, begin_sign_in, complete_sign_in, sign_out
 from .db import (
     connect,
     ensure_checklist_items,
@@ -27,6 +28,9 @@ def setup():
         if request.method == "POST":
             set_setting(con, "m365_client_id", request.form.get("client_id", "").strip())
             set_setting(con, "m365_tenant", request.form.get("tenant", "organizations").strip() or "organizations")
+            set_setting(con, "m365_client_secret", request.form.get("client_secret", "").strip())
+            set_setting(con, "public_base_url", request.form.get("public_base_url", "").strip())
+            set_setting(con, "multi_user_mode", "1" if request.form.get("multi_user_mode") else "0")
             interval = request.form.get("expediter_interval_minutes", "30").strip()
             try:
                 interval = str(max(5, int(interval)))
@@ -40,6 +44,9 @@ def setup():
                 return redirect(url_for("core.m365_connect"))
         cid = os.environ.get("M365_CLIENT_ID") or get_setting(con, "m365_client_id")
         tenant = os.environ.get("M365_TENANT") or get_setting(con, "m365_tenant", "organizations")
+        client_secret = os.environ.get("M365_CLIENT_SECRET") or get_setting(con, "m365_client_secret", "")
+        public_base_url = os.environ.get("EZ_EXPEDITE_PUBLIC_BASE_URL") or get_setting(con, "public_base_url", "")
+        multi_user_mode = get_setting(con, "multi_user_mode", "1") == "1"
         expedite_interval = get_setting(con, "expediter_interval_minutes", "30")
     p = profile()
     state = f"Connected: {e(p.get('displayName') or p.get('userPrincipalName'))}" if p else "Outlook and Teams are not connected."
@@ -51,11 +58,14 @@ def setup():
       <form method='post' class='form'>
         <label>Application Client ID<input name='client_id' value='{e(cid)}' placeholder='One-time app identifier'></label>
         <label>Tenant<input name='tenant' value='{e(tenant)}'></label>
+        <label>Web sign-in secret<input type='password' name='client_secret' value='{e(client_secret)}'></label>
+        <label>Public base URL<input name='public_base_url' value='{e(public_base_url)}' placeholder='https://server.example.com'></label>
         <label>Expediter check interval (minutes)<input type='number' min='5' name='expediter_interval_minutes' value='{e(expedite_interval)}'></label>
-        <div><br><button name='connect' value='1'>Save + Connect Microsoft 365</button></div>
+        <label><input type='checkbox' name='multi_user_mode' value='1' {'checked' if multi_user_mode else ''}> Multi-user delegate sign-in</label>
+        <div><br><button name='connect' value='1'>Save + Connect notification account</button></div>
         <div class='wide'><button class='secondary' name='finish' value='1'>Finish setup</button></div>
       </form>
-      <p class='muted'>Delegated permissions: User.Read, User.ReadBasic.All, Mail.Read, Mail.Send, Chat.Create, ChatMessage.Send. The Client ID is not a password or client secret.</p>
+      <p class='muted'>Notification account permissions: User.Read, User.ReadBasic.All, Mail.Read, Mail.Send, Chat.Create, ChatMessage.Send.</p>
     </div>
     """
     return page("Setup", body)
@@ -69,6 +79,31 @@ def m365_connect():
     except M365Error as ex:
         flash(str(ex))
     return redirect(url_for("core.setup"))
+
+
+@bp.route("/auth/login")
+def auth_login():
+    try:
+        return redirect(begin_sign_in())
+    except AuthConfigError as ex:
+        flash(str(ex))
+        return redirect(url_for("core.setup"))
+
+
+@bp.route("/auth/callback")
+def auth_callback():
+    try:
+        complete_sign_in(request.args.to_dict(flat=True))
+        return redirect(url_for("core.dashboard"))
+    except AuthConfigError as ex:
+        flash(str(ex))
+        return redirect(url_for("core.setup"))
+
+
+@bp.route("/auth/logout")
+def auth_logout():
+    sign_out()
+    return redirect(url_for("core.dashboard"))
 
 
 @bp.route("/")
