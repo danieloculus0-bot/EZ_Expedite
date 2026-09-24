@@ -220,7 +220,7 @@ BASE = """<!doctype html>
     <a href='/rma/workflow'>RMA Workflow</a><a href='/systems'>ERP / Systems</a>
     <a href='/mail/inbox'>Outlook</a><a href='/appearance'>Appearance</a><a href='/setup'>Microsoft 365</a>
   </nav>
-  <div class='grow'></div><span class='muted small'>{{m365}}</span>
+  <div class='grow'></div><span class='muted small'>{{user_label}}</span><a class='small' href='{{auth_href}}'>{{auth_label}}</a>
 </header>
 <main>
 {% for m in get_flashed_messages() %}<div class='flash'>{{m}}</div>{% endfor %}
@@ -257,6 +257,14 @@ def m365():
 
 
 def profile():
+    with connect(db_path()) as con:
+        multi_user = get_setting(con, "multi_user_mode", "1") == "1"
+    if multi_user:
+        try:
+            from .auth import signed_in_user
+            return signed_in_user()
+        except Exception:
+            return None
     try:
         return m365().me()
     except Exception:
@@ -284,14 +292,23 @@ def theme_css() -> str:
 
 def page(title, body):
     p = profile()
-    label = (p.get("displayName") or p.get("userPrincipalName")) if p else "not connected"
+    if p:
+        user_label = p.get("displayName") or p.get("mail") or p.get("userPrincipalName") or ""
+        auth_label = "Sign out"
+        auth_href = "/auth/logout"
+    else:
+        user_label = ""
+        auth_label = "Sign in"
+        auth_href = "/auth/login"
     return render_template_string(
         BASE,
         title=title,
         body=body,
         css=CSS,
         theme_css=theme_css(),
-        m365="M365: " + e(label),
+        user_label=e(user_label),
+        auth_label=auth_label,
+        auth_href=auth_href,
     )
 
 
