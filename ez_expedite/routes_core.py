@@ -16,6 +16,7 @@ from .db import (
 )
 from .helpers import PRIORITIES, STATUSES, db_path, e, m365, page, profile, safe_hex
 from .m365 import M365Error
+from .rma_workflow import assign_stage_owner, stage_info
 
 bp = Blueprint("core", __name__)
 
@@ -457,6 +458,11 @@ def new_occurrence():
                 con.execute(
                     "INSERT INTO rma_details(occurrence_id,recovery_status) VALUES(?,?)",
                     (oid, "NOT REQUIRED"),
+                )
+                assign_stage_owner(con, oid, "INTAKE")
+                con.execute(
+                    "UPDATE occurrences SET next_action=?,updated_at=? WHERE id=?",
+                    (stage_info("INTAKE").action, utcnow(), oid),
                 )
             ensure_checklist_items(con, oid, tid)
             log_activity(con, oid, "CREATE", f"{tname} occurrence created.", request.form.get("owner_name", ""))
