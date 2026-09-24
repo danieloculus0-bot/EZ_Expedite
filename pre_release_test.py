@@ -129,6 +129,7 @@ def main() -> None:
 
         with connect(db) as con:
             set_setting(con, "setup_complete", "1")
+            set_setting(con, "multi_user_mode", "0")
             con.execute(
                 "INSERT INTO occurrence_types(name,prefix,active,created_at) VALUES('PURCHASE REQUEST','PR',1,'2026-01-01T00:00:00Z')"
             )
