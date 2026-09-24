@@ -216,6 +216,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     detail TEXT,
     UNIQUE(occurrence_id, channel, rule_key, due_date_snapshot, recipient)
 );
+
+CREATE TABLE IF NOT EXISTS digest_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipient TEXT NOT NULL,
+    digest_type TEXT NOT NULL,
+    digest_date TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    item_count INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(recipient, digest_type, digest_date)
+);
 """
 
 
@@ -277,10 +287,16 @@ def init_db(db_path: str | Path) -> None:
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('theme_muted','#9BA8B7')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_name','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_name_2','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_csr_email_2','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_name','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_name_2','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_shipping_email_2','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_name','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_email','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_name_2','')")
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_role_quality_email_2','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_quality','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_operations','')")
         con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('rma_cc_customer_service','')")
