@@ -8,6 +8,8 @@ on:
       - "**/*.py"
       - "requirements*.txt"
       - "build_windows.ps1"
+      - "build_installer.ps1"
+      - "installer/**"
       - ".github/workflows/windows-build.yml"
 
 jobs:
@@ -51,9 +53,58 @@ jobs:
           finally {
             if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
           }
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after Inno Setup installation." }
+          & $iscc ".\installer\EZ_Expedite.iss"
+      - name: Install-test setup package
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem ".\dist-installer\EZ_Expedite_Setup_*.exe" | Select-Object -First 1
+          if (-not $setup) { throw "Installer package was not created." }
+          $install = Start-Process -FilePath $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Installer exited with code $($install.ExitCode)." }
+
+          $installedExe = Join-Path $env:LOCALAPPDATA "Programs\EZ Expedite\EZ_Expedite.exe"
+          if (-not (Test-Path $installedExe)) { throw "Installed EZ_Expedite.exe was not found." }
+
+          $process = Start-Process -FilePath $installedExe -PassThru
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 1
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:5050/health" -TimeoutSec 2
+                if ($health.status -eq "ok" -and $health.app -eq "EZ Expedite") {
+                  $ready = $true
+                  break
+                }
+              } catch {}
+            }
+            if (-not $ready) { throw "Installed EZ Expedite did not become healthy." }
+          }
+          finally {
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          }
+
+          $uninstaller = Join-Path $env:LOCALAPPDATA "Programs\EZ Expedite\unins000.exe"
+          if (-not (Test-Path $uninstaller)) { throw "Uninstaller was not registered." }
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstaller exited with code $($uninstall.ExitCode)." }
       - name: Upload standalone Windows app
         uses: actions/upload-artifact@v4
         with:
           name: EZ_Expedite-Windows
           path: dist/EZ_Expedite.exe
+          if-no-files-found: error
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: EZ_Expedite-Installer
+          path: dist-installer/EZ_Expedite_Setup_*.exe
           if-no-files-found: error
