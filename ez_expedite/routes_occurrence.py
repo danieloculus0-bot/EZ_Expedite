@@ -629,6 +629,8 @@ def external_reference(oid):
 @bp.route("/occurrence/<int:oid>/activity", methods=["POST"])
 def activity(oid):
     with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
         log_activity(
             con,
             oid,
@@ -675,6 +677,8 @@ def close_occurrence(oid):
         ensure_checklist_items(con, oid, row["occurrence_type_id"])
         blockers = generic_close_blockers(con, oid)
         if row["type_name"] == "RMA":
+            if (row["rma_stage"] or "INTAKE") != "COMPLETE":
+                blockers.append("RMA workflow is not complete.")
             if row["containment_required"] and not row["containment_complete"]:
                 blockers.append("Containment is required but incomplete.")
             if row["corrective_action_required"] and not row["corrective_action_complete"]:
