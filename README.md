@@ -23,17 +23,32 @@ The universal workflow is:
 
 **Create -> Assign -> Define next action -> Expedite -> Escalate -> Document -> Verify -> Close**
 
-## Windows users do not need Python
+## Windows installer
 
-The intended production distribution is the standalone Windows executable:
+The intended production distribution is:
 
 ```text
-EZ_Expedite.exe
+EZ_Expedite_Setup_0.1.0.exe
 ```
 
-GitHub Actions builds it with PyInstaller. The packaged EXE contains the Python runtime and application dependencies, so the end user's machine does **not** need Python installed.
+The installer is per-user and does not normally require administrator rights. It installs EZ Expedite under the current user's local Programs directory, registers it in Windows Apps / Installed Apps, creates a Start Menu shortcut, and offers an optional desktop shortcut.
 
-The Windows build is uploaded as the `EZ_Expedite-Windows` artifact from the `windows-build` GitHub Actions workflow.
+The installed application includes the Python runtime and all required packages. End users do **not** need Python installed.
+
+Application data is kept separately under:
+
+```text
+%LOCALAPPDATA%\EZ_Expedite\instance
+```
+
+That location contains the local database, attachments, configuration and Microsoft token cache. Uninstalling the application does not delete that operational data.
+
+GitHub Actions produces both:
+
+- `EZ_Expedite-Installer` - normal Windows setup package
+- `EZ_Expedite-Windows` - standalone EXE for troubleshooting or portable testing
+
+The Windows workflow does not merely compile the installer. It silently installs the setup package on a clean Windows runner, launches the installed application, verifies the local health endpoint, then runs the uninstaller before publishing the artifact.
 
 When the packaged app runs it:
 
@@ -355,7 +370,7 @@ http://127.0.0.1:5050
 
 The source launcher creates a virtual environment, installs requirements, runs the smoke test and starts the app.
 
-## Build the Windows EXE locally
+## Build Windows packages locally
 
 A developer machine with Python can build the distributable executable with:
 
@@ -370,6 +385,18 @@ dist\EZ_Expedite.exe
 ```
 
 The recipient of that EXE does not need Python.
+
+To build the normal installer on a developer machine with Inno Setup 6 installed:
+
+```powershell
+.\build_installer.ps1
+```
+
+Output:
+
+```text
+dist-installer\EZ_Expedite_Setup_0.1.0.exe
+```
 
 ## Verification
 
@@ -390,4 +417,4 @@ The smoke test currently exercises:
 - ERP/external synchronization keys
 - core web routes
 
-GitHub Actions runs smoke verification on pushes and pull requests. A separate Windows workflow builds and uploads the standalone executable.
+GitHub Actions runs smoke verification on pushes and pull requests. The Windows workflow builds, launch-tests and install-tests both the standalone executable and the installer before uploading them.
