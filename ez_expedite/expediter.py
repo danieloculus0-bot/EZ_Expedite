@@ -1,23 +1,50 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date, datetime
 from typing import Callable
 
-from .db import log_activity, utcnow
+from .db import utcnow
 
 Notifier = Callable[[str, str], None]
 
 
-def reminder_rule(due: date, today: date) -> tuple[str, str] | None:
-    delta = (due - today).days
-    if delta == 1:
-        return "UPCOMING_1D", "is due tomorrow"
-    if delta == 0:
-        return "DUE_TODAY", "is due today"
-    overdue = -delta
-    if overdue in {1, 3, 7} or (overdue > 7 and overdue % 7 == 0):
-        return f"OVERDUE_{overdue}D", f"is {overdue} day{'s' if overdue != 1 else ''} overdue"
-    return None
+def overdue_days(due_date: str | None, today: date) -> int:
+    if not due_date:
+        return 0
+    try:
+        due = datetime.strptime(due_date, "%Y-%m-%d").date()
+    except ValueError:
+        return 0
+    return max((today - due).days, 0)
+
+
+def _latest_progress(con, occurrence_id: int) -> str:
+    row = con.execute(
+        """SELECT detail FROM activities
+           WHERE occurrence_id=? AND activity_type IN ('PROGRESS','NOTE')
+           ORDER BY id DESC LIMIT 1""",
+        (occurrence_id,),
+    ).fetchone()
+    return str(row["detail"] or "").strip() if row else ""
+
+
+def _digest_message(items: list[dict], today: date) -> str:
+    lines = [f"EZ Expedite - Past Due - {today.isoformat()}", ""]
+    for item in sorted(items, key=lambda x: (-x["days_overdue"], x["case_number"])):
+        note = item["last_note"] or "No progress note"
+        if len(note) > 180:
+            note = note[:177] + "..."
+        lines.extend(
+            [
+                f"{item['case_number']} | {item['days_overdue']} day{'s' if item['days_overdue'] != 1 else ''} past due",
+                f"{item['type_name']} | {item['title']}",
+                f"Next: {item['next_action'] or 'Not entered'}",
+                f"Last note: {note}",
+                "",
+            ]
+        )
+    return "\n".join(lines).rstrip()
 
 
 def run_expeditor(con, notify_teams: Notifier | None = None, today: date | None = None) -> dict[str, int]:
@@ -28,7 +55,15 @@ def run_expeditor(con, notify_teams: Notifier | None = None, today: date | None 
            JOIN occurrence_types t ON t.id=o.occurrence_type_id
            WHERE o.status!='CLOSED'"""
     ).fetchall()
-    result = {"checked": 0, "sent": 0, "unassigned": 0, "due_without_action": 0, "errors": 0}
+    result = {
+        "checked": 0,
+        "digests_sent": 0,
+        "overdue_items": 0,
+        "unassigned": 0,
+        "due_without_action": 0,
+        "errors": 0,
+    }
+    overdue_by_owner: dict[str, list[dict]] = defaultdict(list)
 
     for row in rows:
         result["checked"] += 1
@@ -43,45 +78,47 @@ def run_expeditor(con, notify_teams: Notifier | None = None, today: date | None 
         if row["due_date"] and not str(row["next_action"] or "").strip():
             result["due_without_action"] += 1
 
-        if not row["due_date"] or not row["owner_email"] or notify_teams is None:
-            continue
-        try:
-            due = datetime.strptime(row["due_date"], "%Y-%m-%d").date()
-        except ValueError:
-            continue
-        rule = reminder_rule(due, today)
-        if not rule:
-            continue
-        rule_key, phrase = rule
-        recipient = row["owner_email"].strip().lower()
-        exists = con.execute(
-            """SELECT 1 FROM notifications
-               WHERE occurrence_id=? AND channel='TEAMS' AND rule_key=?
-                 AND COALESCE(due_date_snapshot,'')=COALESCE(?, '')
-                 AND recipient=?""",
-            (row["id"], rule_key, row["due_date"], recipient),
-        ).fetchone()
-        if exists:
+        days = overdue_days(row["due_date"], today)
+        recipient = str(row["owner_email"] or "").strip().lower()
+        if days <= 0 or not recipient:
             continue
 
-        message = (
-            f"EZ Expedite: {row['case_number']} {phrase}\n"
-            f"Type: {row['type_name']}\n"
-            f"Occurrence: {row['title']}\n"
-            f"Next action: {row['next_action'] or 'Not defined'}\n"
-            f"Due: {row['due_date']}"
+        result["overdue_items"] += 1
+        overdue_by_owner[recipient].append(
+            {
+                "id": row["id"],
+                "case_number": row["case_number"],
+                "type_name": row["type_name"],
+                "title": row["title"],
+                "next_action": row["next_action"],
+                "days_overdue": days,
+                "last_note": _latest_progress(con, row["id"]),
+            }
         )
+
+    if notify_teams is None:
+        return result
+
+    digest_date = today.isoformat()
+    for recipient, items in overdue_by_owner.items():
+        already_sent = con.execute(
+            """SELECT 1 FROM digest_notifications
+               WHERE recipient=? AND digest_type='PAST_DUE' AND digest_date=?""",
+            (recipient, digest_date),
+        ).fetchone()
+        if already_sent:
+            continue
+
         try:
-            notify_teams(recipient, message)
+            notify_teams(recipient, _digest_message(items, today))
             con.execute(
-                """INSERT INTO notifications(
-                   occurrence_id,channel,rule_key,due_date_snapshot,recipient,sent_at,detail)
-                   VALUES(?,?,?,?,?,?,?)""",
-                (row["id"], "TEAMS", rule_key, row["due_date"], recipient, utcnow(), phrase),
+                """INSERT INTO digest_notifications(
+                   recipient,digest_type,digest_date,sent_at,item_count)
+                   VALUES(?,?,?,?,?)""",
+                (recipient, "PAST_DUE", digest_date, utcnow(), len(items)),
             )
-            log_activity(con, row["id"], "EXPEDITE", f"Teams reminder sent: {phrase}.", "EZ Expedite")
-            result["sent"] += 1
-        except Exception as exc:
-            log_activity(con, row["id"], "EXPEDITE ERROR", f"Reminder failed: {exc}", "EZ Expedite")
+            result["digests_sent"] += 1
+        except Exception:
             result["errors"] += 1
+
     return result
