@@ -15,35 +15,11 @@ class RMAStage:
 
 
 STAGES = [
-    RMAStage("INTAKE", "Intake", "csr", "CSR", "Complete RMA intake and initiate the notification."),
-    RMAStage(
-        "AWAITING CUSTOMER RETURN",
-        "Product Returned to WMF",
-        "shipping",
-        "Shipping Clerk",
-        "Receive the customer return and place it in the RMA hold area.",
-    ),
-    RMAStage(
-        "RMA REVIEW",
-        "RMA Review",
-        "quality",
-        "Quality Manager",
-        "Review the returned product and determine whether a work order is required.",
-    ),
-    RMAStage(
-        "RETURN TO CUSTOMER",
-        "Product Returned to Customer",
-        "shipping",
-        "Shipping Clerk",
-        "Complete final quality approval and return the product to the customer.",
-    ),
-    RMAStage(
-        "COMPLETE",
-        "Complete",
-        "shipping",
-        "Shipping Clerk",
-        "Verify the record is complete and close the occurrence.",
-    ),
+    RMAStage("INTAKE", "Intake", "csr", "Customer Service", "Complete intake fields."),
+    RMAStage("AWAITING CUSTOMER RETURN", "Product Returned to WMF", "shipping", "Shipping", "Receive the return and confirm RMA hold-area placement."),
+    RMAStage("RMA REVIEW", "RMA Review", "quality", "Quality", "Review product and issue a work order when required."),
+    RMAStage("RETURN TO CUSTOMER", "Product Returned to Customer", "shipping", "Shipping", "Complete final inspection and shipment confirmation."),
+    RMAStage("COMPLETE", "Complete", "shipping", "Shipping", "Verify completion and close."),
 ]
 
 _STAGE_BY_KEY = {stage.key: stage for stage in STAGES}
@@ -80,7 +56,6 @@ def _present(value) -> bool:
 def stage_blockers(row) -> list[str]:
     stage = row["rma_stage"] or "INTAKE"
     blockers: list[str] = []
-
     if stage == "INTAKE":
         required = [
             ("RMA Number", row["rma_number"]),
@@ -94,18 +69,11 @@ def stage_blockers(row) -> list[str]:
         blockers.extend(f"{label} is required." for label, value in required if not _present(value))
         if not _present(row["description"]) and not _present(row["sales_comment"]):
             blockers.append("Notes are required.")
-
     elif stage == "AWAITING CUSTOMER RETURN":
-        decision = str(row["received_from_customer"] or "").upper()
-        if decision != "YES":
-            blockers.append(
-                "Customer product must be received before advancing."
-                if decision == "NO"
-                else "Received from Customer must be answered YES or NO."
-            )
+        if str(row["received_from_customer"] or "").upper() != "YES":
+            blockers.append("Received from Customer must be YES before advancing.")
         if not row["hold_area_confirmed"]:
             blockers.append("RMA hold-area placement must be confirmed.")
-
     elif stage == "RMA REVIEW":
         if not row["product_reviewed"]:
             blockers.append("Product review must be completed.")
@@ -116,50 +84,52 @@ def stage_blockers(row) -> list[str]:
             if str(row["work_order_issued"] or "").upper() != "YES":
                 blockers.append("A required work order has not been issued.")
             if not _present(row["work_order"]):
-                blockers.append("Work Order # is required when a work order is needed.")
-
+                blockers.append("Work Order # is required.")
     elif stage == "RETURN TO CUSTOMER":
         result = str(row["final_quality_result"] or "").upper()
         if result not in {"PASS", "FAIL"}:
             blockers.append("Final Quality Inspection must be PASS or FAIL.")
         elif result == "FAIL":
-            blockers.append("Final Quality Inspection failed. Return the RMA to review.")
+            blockers.append("Final Quality Inspection failed.")
         if str(row["approved_to_ship"] or "").upper() != "YES":
-            blockers.append("Product is not approved to ship.")
+            blockers.append("Approved to Ship must be YES.")
         if str(row["ready_to_ship"] or "").upper() != "YES":
-            blockers.append("Product is not marked ready to ship.")
+            blockers.append("Ready to Ship must be YES.")
         if not row["shipped_to_customer"]:
-            blockers.append("Return shipment to the customer has not been confirmed.")
-
+            blockers.append("Shipment to customer must be confirmed.")
     return blockers
 
 
-def _role_settings(con, role_key: str) -> tuple[str, str]:
-    return (
-        get_setting(con, f"rma_role_{role_key}_name", ""),
-        get_setting(con, f"rma_role_{role_key}_email", ""),
+def primary_delegates(con, role_key: str) -> list[dict]:
+    result = []
+    for suffix in ("", "_2"):
+        name = get_setting(con, f"rma_role_{role_key}_name{suffix}", "").strip()
+        email = get_setting(con, f"rma_role_{role_key}_email{suffix}", "").strip().lower()
+        if name or email:
+            result.append({"name": name, "email": email})
+    return result[:2]
+
+
+def stage_delegates(con, stage_key: str) -> list[dict]:
+    return primary_delegates(con, stage_info(stage_key).role_key)
+
+
+def assign_stage_owner(con, occurrence_id: int, stage_key: str) -> list[dict]:
+    delegates = stage_delegates(con, stage_key)
+    first = delegates[0] if delegates else {"name": "", "email": ""}
+    con.execute(
+        "UPDATE occurrences SET owner_name=?,owner_email=?,updated_at=? WHERE id=?",
+        (first["name"], first["email"], utcnow(), occurrence_id),
     )
+    return delegates
 
 
-def assign_stage_owner(con, occurrence_id: int, stage_key: str) -> tuple[str, str]:
-    stage = stage_info(stage_key)
-    name, email = _role_settings(con, stage.role_key)
-    if name or email:
-        con.execute(
-            "UPDATE occurrences SET owner_name=?,owner_email=?,updated_at=? WHERE id=?",
-            (name, email, utcnow(), occurrence_id),
-        )
-    return name, email
-
-
-def notification_recipients(con, primary_email: str = "") -> list[str]:
-    values = [primary_email]
-    for key in ("quality", "operations", "customer_service", "design"):
-        values.append(get_setting(con, f"rma_cc_{key}", ""))
-    recipients: list[str] = []
+def cc_recipients(con) -> list[str]:
+    recipients = []
     seen = set()
-    for value in values:
-        for part in str(value or "").replace(";", ",").split(","):
+    for key in ("quality", "operations", "customer_service", "design"):
+        raw = get_setting(con, f"rma_cc_{key}", "")
+        for part in str(raw or "").replace(";", ",").split(","):
             email = part.strip().lower()
             if email and email not in seen:
                 seen.add(email)
@@ -167,14 +137,21 @@ def notification_recipients(con, primary_email: str = "") -> list[str]:
     return recipients
 
 
-def stage_message(row, new_stage: str, owner_name: str, owner_email: str) -> str:
-    stage = stage_info(new_stage)
-    primary = owner_name or owner_email or stage.role_label
+def can_advance(con, stage_key: str, user_email: str) -> bool:
+    email = str(user_email or "").strip().lower()
+    if not email:
+        return False
+    return any(d["email"] == email for d in stage_delegates(con, stage_key) if d["email"])
+
+
+def stage_message(row, stage_key: str, read_only: bool = False) -> str:
+    stage = stage_info(stage_key)
+    heading = "RMA UPDATE - READ ONLY" if read_only else "RMA - ACTION REQUIRED"
     return (
-        f"EZ Expedite - ACTION REQUIRED\n"
+        f"{heading}\n"
         f"RMA: {row['rma_number'] or row['case_number']}\n"
         f"Stage: {stage.label}\n"
-        f"WMF Primary: {primary}\n"
+        f"Primary Department: {stage.role_label}\n"
         f"Customer: {row['customer'] or 'Not entered'}\n"
         f"Defect: {row['defect_type'] or row['discrepancy'] or 'Not entered'}\n"
         f"PO: {row['purchase_order'] or 'Not entered'}\n"
@@ -185,69 +162,35 @@ def stage_message(row, new_stage: str, owner_name: str, owner_email: str) -> str
 
 def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
     row = con.execute(
-        """SELECT o.*,r.*
-           FROM occurrences o
-           JOIN rma_details r ON r.occurrence_id=o.id
-           WHERE o.id=?""",
+        """SELECT o.*,r.* FROM occurrences o
+           JOIN rma_details r ON r.occurrence_id=o.id WHERE o.id=?""",
         (occurrence_id,),
     ).fetchone()
     if not row:
         return {"ok": False, "blockers": ["RMA occurrence not found."]}
 
     current = row["rma_stage"] or "INTAKE"
-
     if current == "RETURN TO CUSTOMER" and str(row["final_quality_result"] or "").upper() == "FAIL":
         new_stage = "RMA REVIEW"
-        con.execute(
-            "UPDATE rma_details SET rma_stage=? WHERE occurrence_id=?",
-            (new_stage, occurrence_id),
-        )
-        con.execute(
-            "UPDATE occurrences SET status=?,updated_at=? WHERE id=?",
-            (_STATUS_BY_STAGE[new_stage], utcnow(), occurrence_id),
-        )
-        owner_name, owner_email = assign_stage_owner(con, occurrence_id, new_stage)
-        log_activity(
-            con,
-            occurrence_id,
-            "RMA STAGE",
-            "Final quality inspection failed. RMA returned to RMA Review.",
-            actor,
-        )
-        refreshed = con.execute(
-            """SELECT o.*,r.* FROM occurrences o JOIN rma_details r ON r.occurrence_id=o.id WHERE o.id=?""",
-            (occurrence_id,),
-        ).fetchone()
-        return {
-            "ok": True,
-            "new_stage": new_stage,
-            "owner_name": owner_name,
-            "owner_email": owner_email,
-            "message": stage_message(refreshed, new_stage, owner_name, owner_email),
-        }
+    else:
+        blockers = stage_blockers(row)
+        if blockers:
+            return {"ok": False, "blockers": blockers}
+        new_stage = _NEXT.get(current)
+        if not new_stage:
+            return {"ok": False, "blockers": ["RMA workflow is already complete."]}
 
-    blockers = stage_blockers(row)
-    if blockers:
-        return {"ok": False, "blockers": blockers}
-
-    new_stage = _NEXT.get(current)
-    if not new_stage:
-        return {"ok": False, "blockers": ["This RMA workflow is already complete."]}
-
+    con.execute("UPDATE rma_details SET rma_stage=? WHERE occurrence_id=?", (new_stage, occurrence_id))
     con.execute(
-        "UPDATE rma_details SET rma_stage=? WHERE occurrence_id=?",
-        (new_stage, occurrence_id),
+        "UPDATE occurrences SET status=?,next_action=?,updated_at=? WHERE id=?",
+        (_STATUS_BY_STAGE[new_stage], stage_info(new_stage).action, utcnow(), occurrence_id),
     )
-    con.execute(
-        "UPDATE occurrences SET status=?,updated_at=? WHERE id=?",
-        (_STATUS_BY_STAGE[new_stage], utcnow(), occurrence_id),
-    )
-    owner_name, owner_email = assign_stage_owner(con, occurrence_id, new_stage)
+    delegates = assign_stage_owner(con, occurrence_id, new_stage)
     log_activity(
         con,
         occurrence_id,
         "RMA STAGE",
-        f"RMA advanced from {stage_info(current).label} to {stage_info(new_stage).label}.",
+        f"{stage_info(current).label} -> {stage_info(new_stage).label}.",
         actor,
     )
     refreshed = con.execute(
@@ -257,9 +200,10 @@ def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
     return {
         "ok": True,
         "new_stage": new_stage,
-        "owner_name": owner_name,
-        "owner_email": owner_email,
-        "message": stage_message(refreshed, new_stage, owner_name, owner_email),
+        "delegates": delegates,
+        "cc": cc_recipients(con),
+        "primary_message": stage_message(refreshed, new_stage, False),
+        "cc_message": stage_message(refreshed, new_stage, True),
     }
 
 
