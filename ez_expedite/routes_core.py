@@ -31,6 +31,9 @@ def setup():
             set_setting(con, "m365_client_secret", request.form.get("client_secret", "").strip())
             set_setting(con, "public_base_url", request.form.get("public_base_url", "").strip())
             set_setting(con, "multi_user_mode", "1" if request.form.get("multi_user_mode") else "0")
+            network_mode = request.form.get("network_mode", "local")
+            set_setting(con, "listen_host", "0.0.0.0" if network_mode == "shared" else "127.0.0.1")
+            set_setting(con, "listen_port", request.form.get("listen_port", "5050").strip() or "5050")
             interval = request.form.get("expediter_interval_minutes", "30").strip()
             try:
                 interval = str(max(5, int(interval)))
@@ -47,6 +50,9 @@ def setup():
         client_secret = os.environ.get("M365_CLIENT_SECRET") or get_setting(con, "m365_client_secret", "")
         public_base_url = os.environ.get("EZ_EXPEDITE_PUBLIC_BASE_URL") or get_setting(con, "public_base_url", "")
         multi_user_mode = get_setting(con, "multi_user_mode", "1") == "1"
+        listen_host = get_setting(con, "listen_host", "127.0.0.1")
+        listen_port = get_setting(con, "listen_port", "5050")
+        network_mode = "shared" if listen_host == "0.0.0.0" else "local"
         expedite_interval = get_setting(con, "expediter_interval_minutes", "30")
     try:
         notification_profile = m365().me()
@@ -67,6 +73,11 @@ def setup():
         <label>Tenant<input name='tenant' value='{e(tenant)}'></label>
         <label>Web sign-in secret<input type='password' name='client_secret' value='{e(client_secret)}'></label>
         <label>Public base URL<input name='public_base_url' value='{e(public_base_url)}' placeholder='https://server.example.com'></label>
+        <label>Network access<select name='network_mode'>
+          <option value='local' {'selected' if network_mode == 'local' else ''}>Local only</option>
+          <option value='shared' {'selected' if network_mode == 'shared' else ''}>Shared network</option>
+        </select></label>
+        <label>Port<input type='number' min='1024' max='65535' name='listen_port' value='{e(listen_port)}'></label>
         <label>Expediter check interval (minutes)<input type='number' min='5' name='expediter_interval_minutes' value='{e(expedite_interval)}'></label>
         <label><input type='checkbox' name='multi_user_mode' value='1' {'checked' if multi_user_mode else ''}> Multi-user delegate sign-in</label>
         <div><br><button name='connect' value='1'>Save + Connect notification account</button></div>
