@@ -144,20 +144,28 @@ def can_advance(con, stage_key: str, user_email: str) -> bool:
     return any(d["email"] == email for d in stage_delegates(con, stage_key) if d["email"])
 
 
-def stage_message(row, stage_key: str, read_only: bool = False) -> str:
+def occurrence_url(con, occurrence_id: int) -> str:
+    base = get_setting(con, "public_base_url", "").strip().rstrip("/")
+    return f"{base}/occurrence/{occurrence_id}" if base else ""
+
+
+def stage_message(row, stage_key: str, read_only: bool = False, url: str = "") -> str:
     stage = stage_info(stage_key)
     heading = "RMA UPDATE - READ ONLY" if read_only else "RMA - ACTION REQUIRED"
-    return (
-        f"{heading}\n"
-        f"RMA: {row['rma_number'] or row['case_number']}\n"
-        f"Stage: {stage.label}\n"
-        f"Primary Department: {stage.role_label}\n"
-        f"Customer: {row['customer'] or 'Not entered'}\n"
-        f"Defect: {row['defect_type'] or row['discrepancy'] or 'Not entered'}\n"
-        f"PO: {row['purchase_order'] or 'Not entered'}\n"
-        f"Next Action: {stage.action}\n"
-        f"Due: {row['due_date'] or 'Not assigned'}"
-    )
+    lines = [
+        heading,
+        f"RMA: {row['rma_number'] or row['case_number']}",
+        f"Stage: {stage.label}",
+        f"Primary Department: {stage.role_label}",
+        f"Customer: {row['customer'] or 'Not entered'}",
+        f"Defect: {row['defect_type'] or row['discrepancy'] or 'Not entered'}",
+        f"PO: {row['purchase_order'] or 'Not entered'}",
+        f"Next Action: {stage.action}",
+        f"Due: {row['due_date'] or 'Not assigned'}",
+    ]
+    if url:
+        lines.append(f"Open RMA: {url}")
+    return "\n".join(lines)
 
 
 def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
@@ -197,13 +205,14 @@ def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
         """SELECT o.*,r.* FROM occurrences o JOIN rma_details r ON r.occurrence_id=o.id WHERE o.id=?""",
         (occurrence_id,),
     ).fetchone()
+    url = occurrence_url(con, occurrence_id)
     return {
         "ok": True,
         "new_stage": new_stage,
         "delegates": delegates,
         "cc": cc_recipients(con),
-        "primary_message": stage_message(refreshed, new_stage, False),
-        "cc_message": stage_message(refreshed, new_stage, True),
+        "primary_message": stage_message(refreshed, new_stage, False, url),
+        "cc_message": stage_message(refreshed, new_stage, True, url),
     }
 
 
