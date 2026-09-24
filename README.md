@@ -1,5 +1,7 @@
 # EZ Expedite
 
+User training guide: [RMA User Training Guide](docs/RMA_User_Training_Guide.md)
+
 EZ Expedite is a standalone occurrence tracking and expediting application for manufacturing and operational work that needs an owner, a next action, a due date, escalation, documented progress, and verified closure.
 
 RMA is the first configured occurrence type, but the core application is generic and can also be used for:
