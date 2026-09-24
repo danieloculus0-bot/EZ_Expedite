@@ -20,6 +20,7 @@ from .m365 import M365Error
 from .rma_workflow import (
     advance_rma,
     can_advance,
+    deliver_notifications,
     stage_delegates,
     stage_info,
     stage_rail,
@@ -540,26 +541,9 @@ def rma_action(oid):
     delivery_errors = 0
     try:
         client = m365()
-        primary_emails = set()
-        for delegate in result.get("delegates", []):
-            email = str(delegate.get("email") or "").strip().lower()
-            if not email:
-                continue
-            primary_emails.add(email)
-            try:
-                client.send_teams_message(email, result["primary_message"])
-            except Exception:
-                delivery_errors += 1
-        for email in result.get("cc", []):
-            email = str(email or "").strip().lower()
-            if not email or email in primary_emails:
-                continue
-            try:
-                client.send_teams_message(email, result["cc_message"])
-            except Exception:
-                delivery_errors += 1
+        delivery_errors = deliver_notifications(result, client.send_teams_message)
     except Exception:
-        delivery_errors += 1
+        delivery_errors = max(delivery_errors, 1)
 
     if delivery_errors:
         flash(f"Stage advanced. {delivery_errors} Teams notification(s) failed.")
