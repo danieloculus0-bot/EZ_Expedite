@@ -187,6 +187,29 @@ def notification_package(con, occurrence_id: int, stage_key: str) -> dict:
     }
 
 
+def deliver_notifications(package: dict, notify) -> int:
+    errors = 0
+    primary_emails = set()
+    for delegate in package.get("delegates", []):
+        email = str(delegate.get("email") or "").strip().lower()
+        if not email:
+            continue
+        primary_emails.add(email)
+        try:
+            notify(email, package.get("primary_message", ""))
+        except Exception:
+            errors += 1
+    for email in package.get("cc", []):
+        email = str(email or "").strip().lower()
+        if not email or email in primary_emails:
+            continue
+        try:
+            notify(email, package.get("cc_message", ""))
+        except Exception:
+            errors += 1
+    return errors
+
+
 def advance_rma(con, occurrence_id: int, actor: str = "") -> dict:
     row = con.execute(
         """SELECT o.*,r.* FROM occurrences o
