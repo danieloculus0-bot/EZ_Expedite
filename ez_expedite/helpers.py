@@ -169,6 +169,25 @@ tbody tr:hover td{background:var(--row-hover)}
 }
 .segmented input:checked+span{background:var(--accent);color:white}
 .color-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.aging-grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin:12px 0 18px}
+.aging-cell{border:1px solid var(--accent-line);border-radius:15px;padding:14px;min-height:82px}
+.aging-cell span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.055em;font-weight:720}
+.aging-cell b{display:block;margin-top:7px;font-size:25px;line-height:1;font-weight:760}
+.heat-1{background:rgba(31,111,188,.08)}
+.heat-2{background:rgba(31,111,188,.14)}
+.heat-3{background:rgba(31,111,188,.22)}
+.heat-4{background:rgba(31,111,188,.32)}
+.heat-5{background:rgba(31,111,188,.46)}
+.quick-note{display:flex;gap:6px;min-width:260px}
+.quick-note input{margin:0;min-width:180px}
+.quick-note button{padding:9px 11px}
+.note-preview{max-width:360px;color:var(--text);font-size:12px;margin-bottom:7px}
+.action-card{background:var(--card);border:1px solid var(--accent-line);border-radius:18px;padding:18px;margin-bottom:16px}
+.action-card.readonly{border-color:var(--line);opacity:.92}
+.action-meta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;color:var(--muted);font-size:12px}
+.action-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.delegate-list{display:flex;gap:6px;flex-wrap:wrap}
+.delegate-chip{border:1px solid var(--line-strong);background:var(--input);border-radius:999px;padding:5px 9px;font-size:11px;color:var(--muted)}
 .empty{color:var(--muted);padding:22px;text-align:center}
 @media(max-width:1050px){
   .appbar{align-items:flex-start}.tagline{display:none}
@@ -178,6 +197,8 @@ tbody tr:hover td{background:var(--row-hover)}
 @media(max-width:850px){
   main{padding:18px 14px 40px}.split,.workflow-grid{grid-template-columns:1fr}.table{overflow:auto}
   .appbar{padding:10px 14px}.stage-action{align-items:flex-start;flex-direction:column}
+  .aging-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}
+  .action-fields{grid-template-columns:1fr}
 }
 """
 
