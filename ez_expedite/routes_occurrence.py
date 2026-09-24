@@ -14,8 +14,15 @@ from .db import (
     set_custom_value,
     utcnow,
 )
-from .helpers import PRIORITIES, STATUSES, db_path, e, fnum, m365, page, truth
+from .helpers import PRIORITIES, STATUSES, db_path, e, fnum, m365, page, profile, truth
 from .m365 import M365Error
+from .rma_workflow import (
+    advance_rma,
+    can_advance,
+    stage_delegates,
+    stage_info,
+    stage_rail,
+)
 
 bp = Blueprint("occurrence", __name__)
 
@@ -38,6 +45,88 @@ def _custom_control(field) -> str:
         control = f"<input type='{html_type}' name='{name}' value='{e(value)}'>"
     req = " *" if field["required"] else ""
     return f"<label>{e(field['label'])}{req}{control}</label>"
+
+
+
+def _user_identity() -> tuple[str, str]:
+    person = profile() or {}
+    email = str(person.get("mail") or person.get("userPrincipalName") or "").strip().lower()
+    name = str(person.get("displayName") or email).strip()
+    return name, email
+
+
+def _segmented(name: str, options: list[str], selected: str = "") -> str:
+    return "<div class='segmented'>" + "".join(
+        f"<label><input type='radio' name='{e(name)}' value='{e(option)}' {'checked' if str(selected or '').upper()==option.upper() else ''}><span>{e(option)}</span></label>"
+        for option in options
+    ) + "</div>"
+
+
+def _rma_action_fields(row) -> str:
+    stage = row["rma_stage"] or "INTAKE"
+    if stage == "INTAKE":
+        return f"""<div class='action-fields'>
+        <label>RMA Number<input name='rma_number' value='{e(row["rma_number"])}' required></label>
+        <label>Defect Type<input name='defect_type' value='{e(row["defect_type"])}' required></label>
+        <label>CSR Name<input name='csr_name' value='{e(row["csr_name"])}' required></label>
+        <label>PO #<input name='purchase_order' value='{e(row["purchase_order"])}' required></label>
+        <label>Customer Name<input name='customer' value='{e(row["customer"])}' required></label>
+        <label>Contact Name<input name='contact_name' value='{e(row["contact_name"])}' required></label>
+        <label>Contact #<input name='contact_phone' value='{e(row["contact_phone"])}' required></label>
+        <label class='wide'>Notes<textarea name='notes' required>{e(row["description"])}</textarea></label>
+        </div>"""
+    if stage == "AWAITING CUSTOMER RETURN":
+        return f"""<div class='action-fields'>
+        <label>Received from Customer{_segmented("received_from_customer", ["YES","NO"], row["received_from_customer"])}</label>
+        <label>Receive Date<input type='date' name='receive_date' value='{e(row["receive_date"])}'></label>
+        <label><input type='checkbox' name='hold_area_confirmed' value='1' {'checked' if row["hold_area_confirmed"] else ''}> RMA Hold Area confirmed</label>
+        </div>"""
+    if stage == "RMA REVIEW":
+        return f"""<div class='action-fields'>
+        <label><input type='checkbox' name='product_reviewed' value='1' {'checked' if row["product_reviewed"] else ''}> Product reviewed</label>
+        <label>Work Order Required{_segmented("work_order_required", ["YES","NO"], row["work_order_required"])}</label>
+        <label>Work Order Issued{_segmented("work_order_issued", ["YES","NO"], row["work_order_issued"])}</label>
+        <label>Work Order #<input name='work_order' value='{e(row["work_order"])}'></label>
+        </div>"""
+    if stage == "RETURN TO CUSTOMER":
+        return f"""<div class='action-fields'>
+        <label>Final Quality Inspection{_segmented("final_quality_result", ["PASS","FAIL"], row["final_quality_result"])}</label>
+        <label>Approved to Ship{_segmented("approved_to_ship", ["YES","NO"], row["approved_to_ship"])}</label>
+        <label>Ready to Ship{_segmented("ready_to_ship", ["YES","NO"], row["ready_to_ship"])}</label>
+        <label><input type='checkbox' name='shipped_to_customer' value='1' {'checked' if row["shipped_to_customer"] else ''}> Shipped to Customer</label>
+        <label>Returned / Shipped Date<input type='date' name='returned_to_customer_date' value='{e(row["returned_to_customer_date"])}'></label>
+        </div>"""
+    return "<div class='notice'>Workflow complete.</div>"
+
+
+def _rma_workflow_ui(row, allowed: bool, delegates: list[dict]) -> str:
+    rail = "".join(
+        f"""<div class='stage-step {item["state"]}'><span class='stage-num'>Stage {i}</span>
+        <strong>{e(item["label"])}</strong><small>{e(item["role_label"])}</small></div>"""
+        for i, item in enumerate(stage_rail(row["rma_stage"]), start=1)
+    )
+    stage = stage_info(row["rma_stage"])
+    chips = "".join(
+        f"<span class='delegate-chip'>{e(d['name'] or d['email'])}</span>" for d in delegates
+    ) or "<span class='delegate-chip'>No primary delegate configured</span>"
+    permission = "Action Required" if allowed else "Read Only"
+    form = ""
+    if allowed and stage.key != "COMPLETE":
+        form = f"""<form method='post' action='/occurrence/{row["id"]}/rma/action'>
+          {_rma_action_fields(row)}
+          <label class='wide' style='margin-top:12px'>Progress Note<textarea name='progress_note'></textarea></label>
+          <div class='toolbar'><button>Complete / Advance</button></div>
+        </form>"""
+    elif stage.key != "COMPLETE":
+        form = f"""<div class='action-fields'>{_rma_action_fields(row)}</div>"""
+        form = form.replace("<input ", "<input disabled ").replace("<textarea ", "<textarea disabled ").replace("<select ", "<select disabled ")
+    return f"""<div class='stage-rail'>{rail}</div>
+    <div class='action-card {'readonly' if not allowed else ''}'>
+      <div class='section-head'><div><div class='kicker'>{e(permission)}</div><h2 style='margin:4px 0 0'>{e(stage.label)}</h2></div>
+      <span class='status'>{e(stage.role_label)}</span></div>
+      <div class='action-meta'><span>Primary:</span><div class='delegate-list'>{chips}</div></div>
+      {form}
+    </div>"""
 
 
 @bp.route("/occurrence/<int:oid>", methods=["GET", "POST"])
