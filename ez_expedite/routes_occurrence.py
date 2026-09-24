@@ -10,6 +10,7 @@ from .db import (
     connect,
     ensure_checklist_items,
     generic_close_blockers,
+    get_setting,
     log_activity,
     set_custom_value,
     utcnow,
@@ -53,6 +54,30 @@ def _user_identity() -> tuple[str, str]:
     email = str(person.get("mail") or person.get("userPrincipalName") or "").strip().lower()
     name = str(person.get("displayName") or email).strip()
     return name, email
+
+
+def _rma_write_allowed(con, oid: int) -> bool:
+    row = con.execute(
+        """SELECT t.name type_name,r.rma_stage
+           FROM occurrences o
+           JOIN occurrence_types t ON t.id=o.occurrence_type_id
+           LEFT JOIN rma_details r ON r.occurrence_id=o.id
+           WHERE o.id=?""",
+        (oid,),
+    ).fetchone()
+    if not row or row["type_name"] != "RMA":
+        return True
+    if get_setting(con, "multi_user_mode", "1") != "1":
+        return True
+    _name, email = _user_identity()
+    return can_advance(con, row["rma_stage"] or "INTAKE", email)
+
+
+def _deny_rma_write(con, oid: int) -> bool:
+    if _rma_write_allowed(con, oid):
+        return False
+    flash("This RMA is read only for the connected user.")
+    return True
 
 
 def _segmented(name: str, options: list[str], selected: str = "") -> str:
@@ -152,6 +177,8 @@ def occurrence(oid):
         ).fetchall()
 
         if request.method == "POST":
+            if _deny_rma_write(con, oid):
+                return redirect(url_for("occurrence.occurrence", oid=oid))
             old_owner = base["owner_email"]
             owner = request.form.get("owner_email", "").strip()
             now = utcnow()
@@ -379,6 +406,9 @@ Next action: {request.form.get('next_action','')}""",
 
 @bp.route("/occurrence/<int:oid>/progress", methods=["POST"])
 def progress(oid):
+    with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(request.referrer or url_for("core.dashboard"))
     detail = request.form.get("detail", "").strip()
     if detail:
         actor_name, actor_email = _user_identity()
@@ -512,6 +542,9 @@ def rma_action(oid):
 
 @bp.route("/occurrence/<int:oid>/checklist", methods=["POST"])
 def checklist(oid):
+    with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
     actor = request.form.get("actor", "")
     with connect(db_path()) as con:
         rows = con.execute("SELECT * FROM checklist_items WHERE occurrence_id=?", (oid,)).fetchall()
@@ -533,6 +566,9 @@ def checklist(oid):
 
 @bp.route("/occurrence/<int:oid>/attachment", methods=["POST"])
 def attachment(oid):
+    with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
     upload = request.files.get("attachment")
     if not upload or not upload.filename:
         flash("Choose a file.")
@@ -566,6 +602,9 @@ def attachment_download(attachment_id):
 
 @bp.route("/occurrence/<int:oid>/external", methods=["POST"])
 def external_reference(oid):
+    with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
     external_id = request.form.get("external_id", "").strip()
     if external_id:
         with connect(db_path()) as con:
@@ -602,6 +641,9 @@ def activity(oid):
 
 @bp.route("/occurrence/<int:oid>/email", methods=["POST"])
 def send_email(oid):
+    with connect(db_path()) as con:
+        if _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
     try:
         m365().send_mail(request.form.get("to", ""), request.form.get("subject", ""), request.form.get("body", ""))
         with connect(db_path()) as con:
@@ -620,6 +662,8 @@ def send_email(oid):
 @bp.route("/occurrence/<int:oid>/close", methods=["GET", "POST"])
 def close_occurrence(oid):
     with connect(db_path()) as con:
+        if request.method == "POST" and _deny_rma_write(con, oid):
+            return redirect(url_for("occurrence.occurrence", oid=oid))
         row = con.execute(
             """SELECT o.*,t.name type_name,r.*
                FROM occurrences o JOIN occurrence_types t ON t.id=o.occurrence_type_id
