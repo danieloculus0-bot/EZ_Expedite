@@ -1,6 +1,6 @@
 # EZ Expedite RMA User Training Guide
 
-Application version: **0.1.1**  
+Application version: **0.1.2**  
 Guide revision: **1.0**
 
 ## Quick Start
@@ -293,7 +293,7 @@ EZ Expedite does not ask the user to enter a Microsoft password into the applica
 
 Direct download:
 
-https://github.com/danieloculus0-bot/EZ_Expedite/releases/download/v0.1.1/EZ_Expedite_Setup_0.1.1.exe
+https://github.com/danieloculus0-bot/EZ_Expedite/releases/latest/download/EZ_Expedite_Setup_Latest.exe
 
 The installer includes the Python runtime and application dependencies. End users do not need Python installed.
 

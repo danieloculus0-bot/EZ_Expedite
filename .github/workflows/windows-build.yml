@@ -121,6 +121,9 @@ jobs:
           $setup = Get-ChildItem ".\dist-installer\EZ_Expedite_Setup_0.1.2.exe" | Select-Object -First 1
           if (-not $setup) { throw "Release installer was not created." }
 
+          $latestAlias = Join-Path $setup.Directory.FullName "EZ_Expedite_Setup_Latest.exe"
+          Copy-Item $setup.FullName $latestAlias -Force
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -f $env:RELEASE_TAG $env:GITHUB_SHA
@@ -128,7 +131,12 @@ jobs:
 
           gh release view $env:RELEASE_TAG *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:RELEASE_TAG $setup.FullName --clobber
+            gh release upload $env:RELEASE_TAG $setup.FullName $latestAlias --clobber
+            gh release edit $env:RELEASE_TAG --latest
           } else {
-            gh release create $env:RELEASE_TAG $setup.FullName --title "EZ Expedite 0.1.2" --notes "Windows installer. Python and application dependencies are bundled." --latest
+            gh release create $env:RELEASE_TAG $setup.FullName $latestAlias --title "EZ Expedite 0.1.2" --notes "Windows installer. Python and application dependencies are bundled." --latest
           }
+
+          $stableUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/latest/download/EZ_Expedite_Setup_Latest.exe"
+          curl.exe -fL --retry 5 --retry-delay 2 --head $stableUrl
+          if ($LASTEXITCODE -ne 0) { throw "Stable latest-installer URL did not resolve: $stableUrl" }
