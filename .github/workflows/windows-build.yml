@@ -116,9 +116,9 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.1.1
+          RELEASE_TAG: v0.1.2
         run: |
-          $setup = Get-ChildItem ".\dist-installer\EZ_Expedite_Setup_0.1.1.exe" | Select-Object -First 1
+          $setup = Get-ChildItem ".\dist-installer\EZ_Expedite_Setup_0.1.2.exe" | Select-Object -First 1
           if (-not $setup) { throw "Release installer was not created." }
 
           git config user.name "github-actions[bot]"
@@ -130,5 +130,5 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:RELEASE_TAG $setup.FullName --clobber
           } else {
-            gh release create $env:RELEASE_TAG $setup.FullName --title "EZ Expedite 0.1.1" --notes "Windows installer. Python and application dependencies are bundled." --latest
+            gh release create $env:RELEASE_TAG $setup.FullName --title "EZ Expedite 0.1.2" --notes "Windows installer. Python and application dependencies are bundled." --latest
           }

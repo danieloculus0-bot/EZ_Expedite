@@ -68,16 +68,72 @@ def setup():
         if notification_profile
         else "Notification account not connected."
     )
+    suggested_base_url = public_base_url.strip().rstrip("/") or f"http://127.0.0.1:{listen_port}"
+    web_callback_url = suggested_base_url + "/auth/callback"
     body = f"""
     <h1>Microsoft 365 Setup</h1>
     <div class='panel'>
       <div class='notice'>{state}</div>
       <p>One Microsoft sign-in connects Outlook and Teams. EZ Expedite never asks for or stores the user's Microsoft password.</p>
+
+      <div class='card' style='margin:16px 0'>
+        <h2 style='margin-top:0'>Need Microsoft credentials?</h2>
+        <p>These values are created in your company's Microsoft Entra tenant. They are not your Microsoft username or password.</p>
+        <div class='toolbar'>
+          <a class='btn' href='https://entra.microsoft.com/' target='_blank' rel='noopener'>Open Microsoft Entra</a>
+          <a class='btn secondary' href='https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app' target='_blank' rel='noopener'>Microsoft setup guide</a>
+        </div>
+        <ol>
+          <li>Sign in with your work Microsoft 365 account. Open <b>Entra ID &gt; App registrations &gt; New registration</b>.</li>
+          <li>Name the app <b>EZ Expedite</b>. For an internal company deployment, choose <b>Accounts in this organizational directory only</b>.</li>
+          <li>From the app <b>Overview</b>, copy <b>Application (client) ID</b> into Application Client ID and <b>Directory (tenant) ID</b> into Tenant below.</li>
+          <li>Open <b>Certificates &amp; secrets &gt; New client secret</b>. Copy the secret <b>Value</b> into Web sign-in secret. Microsoft normally shows that value only once.</li>
+          <li>Open <b>Authentication</b>. Add a <b>Mobile and desktop applications</b> redirect of <code>http://localhost</code>. For multi-user web sign-in, add a <b>Web</b> redirect URI of <code>{e(web_callback_url)}</code>.</li>
+          <li>Open <b>API permissions</b> and add Microsoft Graph <b>Delegated</b> permissions: <code>User.Read</code>, <code>User.ReadBasic.All</code>, <code>Mail.Read</code>, <code>Mail.Send</code>, <code>Chat.Create</code>, and <code>ChatMessage.Send</code>.</li>
+        </ol>
+        <p class='muted'><b>Do not paste your Microsoft password anywhere in EZ Expedite.</b> If your company blocks app registration or consent, use the IT request below.</p>
+
+        <details style='margin-top:12px'>
+          <summary><b>I do not have permission to create an app registration</b></summary>
+          <p>Send this to your Microsoft 365 / Entra administrator:</p>
+          <textarea id='it-m365-request' readonly style='width:100%;min-height:190px'>Please create or approve a single-tenant Microsoft Entra app registration named EZ Expedite for our organization.
+
+Required delegated Microsoft Graph permissions:
+User.Read
+User.ReadBasic.All
+Mail.Read
+Mail.Send
+Chat.Create
+ChatMessage.Send
+
+Required redirect URIs:
+Mobile/Desktop: http://localhost
+Web: {e(web_callback_url)}
+
+Please provide the Application (client) ID and Directory (tenant) ID. If our policy permits a client secret for this internal app, please provide the secret VALUE through an approved secure channel. Do not send a Microsoft account password.</textarea>
+          <div class='toolbar'>
+            <button type='button' class='secondary' onclick="navigator.clipboard.writeText(document.getElementById('it-m365-request').value)">Copy IT request</button>
+          </div>
+        </details>
+      </div>
+
       <form method='post' class='form'>
-        <label>Application Client ID<input name='client_id' value='{e(cid)}' placeholder='One-time app identifier'></label>
-        <label>Tenant<input name='tenant' value='{e(tenant)}'></label>
-        <label>Web sign-in secret<input type='password' name='client_secret' value='{e(client_secret)}'></label>
-        <label>Public base URL<input name='public_base_url' value='{e(public_base_url)}' placeholder='https://server.example.com'></label>
+        <label>Application Client ID
+          <input name='client_id' value='{e(cid)}' placeholder='Entra Overview - Application (client) ID'>
+          <span class='muted'>From Entra app registration &gt; Overview.</span>
+        </label>
+        <label>Tenant
+          <input name='tenant' value='{e(tenant)}' placeholder='Directory (tenant) ID'>
+          <span class='muted'>For a work deployment, use your Directory (tenant) ID rather than the generic organizations value.</span>
+        </label>
+        <label>Web sign-in secret
+          <input type='password' name='client_secret' value='{e(client_secret)}' placeholder='Client secret VALUE'>
+          <span class='muted'>Certificates &amp; secrets &gt; New client secret. Use the Value, not the Secret ID.</span>
+        </label>
+        <label>Public base URL
+          <input name='public_base_url' value='{e(public_base_url)}' placeholder='{e(suggested_base_url)}'>
+          <span class='muted'>Local default: {e(suggested_base_url)}. Web callback: {e(web_callback_url)}</span>
+        </label>
         <label>Network access<select name='network_mode'>
           <option value='local' {'selected' if network_mode == 'local' else ''}>Local only</option>
           <option value='shared' {'selected' if network_mode == 'shared' else ''}>Shared network</option>

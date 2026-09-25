@@ -51,7 +51,14 @@ def main() -> None:
         )
         client = app.test_client()
         assert client.get("/").status_code in (301, 302)
-        assert client.get("/setup").status_code == 200
+        setup_response = client.get("/setup")
+        assert setup_response.status_code == 200
+        assert b"Open Microsoft Entra" in setup_response.data
+        assert b"App registrations" in setup_response.data
+        assert b"Application (client) ID" in setup_response.data
+        assert b"Directory (tenant) ID" in setup_response.data
+        assert b"Copy IT request" in setup_response.data
+        assert b"http://127.0.0.1:5050/auth/callback" in setup_response.data
         assert client.get("/health").json["status"] == "ok"
 
         with connect(db) as con:
