@@ -25,12 +25,14 @@ RMA is the first configured occurrence type, but the core application is generic
 The intended end-user distribution is:
 
 ```text
-EZ_Expedite_Setup_0.1.1.exe
+EZ_Expedite_Setup_Latest.exe
 ```
+
+`EZ_Expedite_Setup_Latest.exe` is a stable release alias. New tested releases replace that asset, so documentation and deployment scripts do not need a new URL every version.
 
 Direct installer download:
 
-https://github.com/danieloculus0-bot/EZ_Expedite/releases/download/v0.1.1/EZ_Expedite_Setup_0.1.1.exe
+https://github.com/danieloculus0-bot/EZ_Expedite/releases/latest/download/EZ_Expedite_Setup_Latest.exe
 
 The installer is per-user and normally does not require administrator rights.
 
@@ -794,7 +796,7 @@ Run:
 Output:
 
 ```text
-dist-installer\EZ_Expedite_Setup_0.1.1.exe
+dist-installer\EZ_Expedite_Setup_0.1.2.exe
 ```
 
 The installer recipient does not need Python or Inno Setup.
