@@ -1,5 +1,14 @@
 # EZ Expedite
 
+## Free to use
+
+**EZ Expedite is offered at no charge for personal use and for businesses, including small manufacturing shops.** It is intended to remain a useful standalone occurrence, action, and quality-expediting tool, whether or not a business operates a full ERP system. ERP integration may be added separately in the future.
+
+The source code is provided under the **GNU General Public License, version 3 (GPL-3.0)** in [LICENSE](LICENSE). The GPL permits commercial use, modification, and redistribution (including redistribution for a fee), subject to its terms. This project's no-fee access policy does not impose additional restrictions on recipients and does not alter the GPL.
+
+Any future optional integrations, support arrangements, or hosted services would need clearly stated separate terms; none is required to use the existing GPL-licensed application.
+
+
 User training guide: [RMA User Training Guide](docs/RMA_User_Training_Guide.md)
 
 EZ Expedite is a standalone occurrence tracking and expediting application for manufacturing and operational work that needs an owner, a next action, a due date, escalation, documented progress, and verified closure.
