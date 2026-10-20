@@ -862,3 +862,9 @@ Items that remain environment-specific rather than hard-coded are:
 - direct ERP API endpoint and authentication information
 
 Those values belong to the deployment environment and are intentionally not embedded in the repository.
+
+## Repository audit note (2026-10-20)
+
+**Status: standalone workflow application with a free-to-use GPL release policy.** Source includes a generic occurrence/action queue, local data persistence, assignment/escalation logic and packaging. The October 18 smoke workflow passed. The last visible successful Windows installer-build workflow was September 25: **do not represent that earlier artifact as a newly tested October release without building and checking the current source**. Microsoft 365 and future ERP connectivity have their own setup and authorization boundaries; a tracked occurrence does not automatically update Axiom or JobBOSS².
+
+EZ Expedite remains useful independently of [Axiom Beta](https://github.com/danieloculus0-bot/Axiom_Beta). [Portfolio audit](https://github.com/danieloculus0-bot/Axiom_Beta/blob/main/docs/PORTFOLIO_AUDIT_2026-10-20.md).
