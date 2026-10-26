@@ -52,3 +52,32 @@ test("ChatGPT companion omits confidential fields unless selected",()=>{
  assert.doesNotMatch(prompt,/SECRET-ID-55|PRIVATE CUSTOMER|SECRET ISSUE/);
  assert.match(prompt,/Current workflow stage/);
 });
+
+test("closed RMAs leave the default queue while remaining accessible in history",()=>{
+ assert.match(html,/<option value="open" selected>Open<\/option>/);
+ assert.match(html,/data-close=/);
+ assert.match(html,/data-delete=/);
+ assert.match(html,/id="deleteBtn"/);
+ assert.match(js,/indexedDB\.open\("EZ_RMA_Local",2\)/);
+});
+test("manual closure requires a reason, preserves audit trail and supports deletion",async()=>{
+ sandbox.structuredClone=structuredClone;
+ sandbox.confirm=()=>true;
+ sandbox.prompt=()=>null;
+ run("render=()=>{};notify=()=>{};showEditor=()=>{};hideEditor=()=>{};persist=async()=>{};deletePersisted=async()=>{};records=[normalize({caseNumber:'RMA-2026-0001',stage:'INTAKE'})]");
+ assert.equal(await run("closeRecord(records[0])"),false);
+ assert.equal(run("records[0].closedAt"),"");
+ sandbox.prompt=()=>"Cancelled test case, no customer return";
+ assert.equal(await run("closeRecord(records[0])"),true);
+ assert.equal(run("records[0].stage"),"COMPLETE");
+ assert.equal(run("records[0].preCloseStage"),"INTAKE");
+ assert.equal(run("records[0].manualClosure"),true);
+ assert.equal(run("records[0].log.some(e=>e.kind==='CLOSED - OVERRIDE')"),true);
+ assert.equal(run("records.filter(r=>!r.closedAt).length"),0);
+ sandbox.confirm=()=>false;
+ assert.equal(await run("deleteRecord(records[0])"),false);
+ assert.equal(run("records.length"),1);
+ sandbox.confirm=()=>true;
+ assert.equal(await run("deleteRecord(records[0])"),true);
+ assert.equal(run("records.length"),0);
+});
