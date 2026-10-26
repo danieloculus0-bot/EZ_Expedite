@@ -10,14 +10,14 @@ A static HTML/CSS/JavaScript RMA tracker based on EZ Expedite's staged manufactu
 - **Backup JSON** preserves complete history. **Export CSV** creates a simple spreadsheet-compatible report. **Import** supports JSON backups and compatible CSV exports.
 - Use a JSON backup and import it in another device to copy the records. **There is no cross-device synchronization.**
 - After visiting the page online, a service worker caches app assets for offline use on supported browsers. The static HTML source may also be opened locally, though installation/offline caching is best through HTTPS.
-- **Assistant** includes an optional in-page conversation through a separately deployed [serverless gateway](gateway/README.md). The user reviews the outgoing prompt and selects any additional case fields before clicking Send. The manual Copy & Open ChatGPT option remains available with no gateway.
+- Close completed RMAs with validation or close early with a documented reason. Closed records remain available through the Closed filter and can be reopened.
+- Delete individual RMAs only after confirmation. Deleted cases are removed from this browser, and the case sequence does not reuse numbers.
 
 ## Security and limitations
-- No case data is written to GitHub or any remote RMA database. The optional assistant sends only the user-approved prompt and selected fields to a configured Cloudflare Worker and OpenAI; otherwise case data remains local. No Outlook or Microsoft sign-in.
+- No case data is sent to GitHub or an external service. There are no remote API calls, account credentials, AI functions, Outlook integration or Microsoft sign-in.
 - Data is stored locally in each browser profile; clearing browser storage, changing profiles, using private mode, or device damage can destroy it. Back up routinely.
 - On shared/public devices or shared browser profiles, local data can be read by other users of that profile. This version does **not** enforce user identities, departmental permissions or encryption at rest.
 - A case opened in another browser/device is independent until records are manually imported.
-- Do not use the ChatGPT assistant option for proprietary or personal data unless explicitly approved by your organization. Review the complete prompt before pasting it.
 - No automatic attachment hosting, Teams notifications, or live sync; this is an offline/local subset, not a multi-user server replacement.
 - CSV import is designed for common RMA-export headers. Export large XLSX files as CSV before importing. JSON is the recommended complete backup format.
 - Source licensing is inherited from EZ Expedite GPL-3.0.
