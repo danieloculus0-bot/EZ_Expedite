@@ -81,3 +81,13 @@ test("manual closure requires a reason, preserves audit trail and supports delet
  assert.equal(await run("deleteRecord(records[0])"),true);
  assert.equal(run("records.length"),0);
 });
+
+
+test("optional in-app assistant cannot access an OpenAI key in HTML",()=>{
+ assert.match(html,/id="assistantSend"/);
+ assert.match(html,/id="assistantOutbound"/);
+ assert.match(html,/id="assistantToNote"/);
+ assert.doesNotMatch(html,/sk-[a-zA-Z0-9_-]{20,}/);
+ assert.doesNotMatch(js,/https:\/\/api\.openai\.com/);
+ assert.match(js,/store|assistantEndpoint/);
+});
