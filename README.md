@@ -24,7 +24,7 @@ A separate installable, static HTML/JavaScript RMA tracker based on the core EZ 
 
 Unlike the Windows/Flask version, this edition needs no Outlook, Teams, Microsoft sign-in, Python runtime, remote database, or user GitHub account. **Records stay in browser-local IndexedDB and are never written to GitHub.** Every browser profile/device has a separate dataset. Use built-in JSON backup/import to move full records and CSV to exchange tabular exports. Browser data can be erased; backups are important.
 
-It includes an optional [serverless in-app AI assistant](web-rma/gateway/README.md) that sends only manually approved context to OpenAI through a separately deployable Cloudflare Worker. The Worker requires its own secret API key and strong gateway access code, and is **not yet configured** merely by publishing GitHub Pages. There is also a no-gateway Copy & Open ChatGPT option. No direct ChatGPT sign-in or silent data transfer occurs.
+The browser app contains no AI assistant, external API integration, or serverless gateway. Its local RMA workflow includes close, reopen and delete actions, plus manual backup and import.
 
 ## Run and verify
 
