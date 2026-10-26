@@ -6,7 +6,7 @@ const vm=require("node:vm");
 const html=readFileSync("web-rma/index.html","utf8");
 const js=html.match(/<script>([\s\S]+?)<\/script>/)?.[1];
 assert.ok(js,"App must contain a browser script");
-const stub={getElementById(name){return {value:name==="aiTask"?"guide":"",checked:false}}};
+const stub={getElementById(){return {value:"",checked:false}}};
 const sandbox={document:stub,console,Date,Math,setTimeout,clearTimeout};
 vm.createContext(sandbox);
 vm.runInContext(js.replace(/\s*start\(\);\s*$/,""),sandbox,{timeout:2000});
@@ -46,13 +46,6 @@ test("CSV parsing handles quotes, rows and RMA export headers",()=>{
  assert.equal(run("mapCsv('RMA Number,Customer,Part Number\\n122,Demo,ABC')[0].rmaNumber"),"122");
 });
 test("HTML output escapes user input",()=>assert.equal(run("esc('<img src=x onerror=alert(1)>')"),"&lt;img src=x onerror=alert(1)&gt;"));
-test("ChatGPT companion omits confidential fields unless selected",()=>{
- run("records=[normalize({rmaNumber:'SECRET-ID-55',customer:'PRIVATE CUSTOMER',description:'SECRET ISSUE',stage:'INTAKE'})];assistantId=records[0].id");
- const prompt=run("assistantPrompt()");
- assert.doesNotMatch(prompt,/SECRET-ID-55|PRIVATE CUSTOMER|SECRET ISSUE/);
- assert.match(prompt,/Current workflow stage/);
-});
-
 test("closed RMAs leave the default queue while remaining accessible in history",()=>{
  assert.match(html,/<option value="open" selected>Open<\/option>/);
  assert.match(html,/data-close=/);
@@ -83,11 +76,10 @@ test("manual closure requires a reason, preserves audit trail and supports delet
 });
 
 
-test("optional in-app assistant cannot access an OpenAI key in HTML",()=>{
- assert.match(html,/id="assistantSend"/);
- assert.match(html,/id="assistantOutbound"/);
- assert.match(html,/id="assistantToNote"/);
- assert.doesNotMatch(html,/sk-[a-zA-Z0-9_-]{20,}/);
- assert.doesNotMatch(js,/https:\/\/api\.openai\.com/);
- assert.match(js,/store|assistantEndpoint/);
+test("AI assistant and external call code fully removed",()=>{
+ assert.doesNotMatch(html,/ChatGPT|OpenAI|Assistant|aiPreview|gateway|assistantSend|assistantToNote|chatBtn|caseAssistantBtn/i);
+ assert.doesNotMatch(js,/fetch\s*\(/);
+ assert.match(js,/indexedDB\.open/);
+ assert.match(html,/id="closeBtn"/);
+ assert.match(html,/id="deleteBtn"/);
 });
