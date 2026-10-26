@@ -17,7 +17,7 @@
 </head>
 <body>
 <main class="shell">
-<header class="top"><div class="brand"><div class="mark" aria-hidden="true">EZ</div><div><div class="eyebrow">STANDALONE QUALITY</div><h1>RMA LOCAL</h1></div></div>
+<header class="top"><div class="brand"><div class="mark" aria-hidden="true">EZ</div><div><h1>RMA LOCAL</h1></div></div>
 <div class="buttons">
 <button class="btn" id="backupBtn" type="button">Backup JSON</button>
 <button class="btn" id="csvBtn" type="button">Export CSV</button>
@@ -26,8 +26,8 @@
 <button class="btn primary" id="newBtn" type="button">+ New RMA</button>
 <input class="importfile" id="importFile" type="file" accept=".json,.csv,application/json,text/csv">
 </div></header>
-<section class="hero"><div><div class="eyebrow">QUALITY / CUSTOMER RETURNS</div><h2>Return Material Authorizations</h2><p>Cases, department handoffs, due dates, resolution and verified closure.</p></div>
-<p class="privacy">Private by design. Records are saved in this browser, on this device. GitHub hosts the application files only. No accounts, email integrations or remote database.</p></section>
+<section class="hero"><div><div class="eyebrow">QUALITY / CUSTOMER RETURNS</div><h2>Return Material Authorizations</h2></div>
+</section>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <section class="kpis" aria-label="Case summary">
 <div class="kpi"><label>Total RMAs</label><strong id="kTotal">0</strong><small>All records</small></div>
@@ -44,7 +44,7 @@
 <button class="btn" id="printBtn" type="button">Print queue</button>
 </div>
 <section class="tablewrap"><table aria-label="RMA list"><thead><tr><th>RMA / Case</th><th>Customer / Part</th><th>Stage</th><th>Owner</th><th>Due</th><th>Last activity</th><th></th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty"><strong>No RMA records yet</strong>Create an RMA or import a backup or CSV export.</div></section>
-<p class="footer">Local browser storage is not a network database and does not synchronize between devices. Back up JSON regularly and import that file to move your records. Clearing site data can erase local records.</p>
+
 </main>
 <div class="modal" id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="editorTitle">
 <div class="dialog"><header class="modalhead"><div><div class="eyebrow">RMA WORKFLOW</div><h2 id="editorTitle">New RMA</h2><p id="editorSubtitle">Local case</p></div><button class="btn small" type="button" id="exitEditor" aria-label="Close editor">Close</button></header>
