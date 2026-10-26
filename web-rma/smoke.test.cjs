@@ -15,7 +15,7 @@ const intake={rmaNumber:"123",defectType:"Weld",csrName:"Sam",purchaseOrder:"P10
 test("static app stores in IndexedDB with no server or token request",()=>{
  assert.match(js,/indexedDB\.open/);
  assert.doesNotMatch(js,/api\.openai\.com|github\.com\/repos|fetch\(["']/);
- assert.match(html,/GitHub hosts the application files only/);
+ assert.match(html,/RMA LOCAL/);
 });
 test("workflow matches EZ Expedite stages",()=>{
  assert.equal(run("STAGES.length"),5);
