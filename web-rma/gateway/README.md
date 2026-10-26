@@ -15,6 +15,19 @@ Requires your own Cloudflare Workers account and OpenAI API project with billing
 
 The gateway URL is stored locally in that browser. The access code lives only in page memory and must be reentered after a full page reload. Do not paste the OpenAI API key into the RMA page.
 
+## iPad-only setup using Cloudflare's website
+
+The users of the RMA tracker never install anything. If the administrator also wants to do deployment from an iPad browser, use the Cloudflare Workers dashboard instead of the terminal:
+
+1. Sign into the Cloudflare dashboard in Safari and open Workers & Pages. Create a new Worker named ez-rma-assistant.
+2. Open Edit code. Copy the entire contents of src/index.mjs from this repository into the Worker editor and deploy.
+3. In the Worker's Variables and Secrets settings, add two encrypted secrets named OPENAI_API_KEY and WORKER_ACCESS_TOKEN. Use your own API key and a generated random access code of at least 32 characters.
+4. Optionally add ordinary variables OPENAI_MODEL = gpt-5.4-mini and ALLOWED_ORIGIN = https://danieloculus0-bot.github.io.
+5. Configure Cloudflare rate limiting for production access. The worker code checks the optional ASSISTANT_RATE binding when present, but an ordinary dashboard deployment without that binding will not enforce its limiter.
+6. Paste the deployed Worker URL and access code into the in-app Assistant form.
+
+Only the administrative setup requires a Cloudflare login. Regular iPad users need no Cloudflare or OpenAI login and no API key.
+
 ## Behavior
 
 - RMA records remain in browser IndexedDB. The gateway stores no record or chat transcript.
