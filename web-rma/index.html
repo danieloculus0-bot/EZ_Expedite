@@ -33,6 +33,15 @@ tbody tr:hover{background:var(--blue)}
 .step.done{border-color:var(--gray)}
 .step.now{background:var(--blue);color:var(--white);border-color:var(--gray)}
 
+
+.assistant-stream{max-height:280px;overflow-y:auto;margin-top:10px;border:1px solid var(--gray);border-radius:8px}
+.assistant-stream:empty{display:none}
+.assistant-line{padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line);font-size:.9rem}
+.assistant-line:last-child{border-bottom:0}
+.assistant-line strong{display:block;color:var(--white);margin-bottom:5px}
+.assistant-line:nth-child(even){background:var(--raised)}
+#liveAssistantPanel summary{cursor:pointer;font-weight:650;color:var(--white)}
+
 @media(max-width:940px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.shell{padding:0 13px 28px}.top{padding:15px 0}.buttons{width:100%}.buttons .btn{flex:1}.hero{margin:20px 0}.hero h2{font-size:1.43rem}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{min-height:101px;padding:12px}.kpi strong{font-size:1.62rem}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.modal{padding:0}.dialog{max-height:100vh;height:100vh;border-radius:0}.modalhead{padding:16px}.modalbody{padding:0 16px 18px}.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}}
 @media print{body{background:white;color:black}.buttons,.toolbar,.modal,.toast,.heat{display:none!important}.kpi,.tablewrap{background:white;color:black;border-color:#999}.kpi label,.kpi small,th,td{color:black;border-color:#aaa}.shell{max-width:none;padding:0}}
@@ -45,7 +54,7 @@ tbody tr:hover{background:var(--blue)}
 <button class="btn" id="backupBtn" type="button">Backup JSON</button>
 <button class="btn" id="csvBtn" type="button">Export CSV</button>
 <button class="btn" id="importBtn" type="button">Import</button>
-<button class="btn" id="chatBtn" type="button">ChatGPT Assistant</button>
+<button class="btn" id="chatBtn" type="button">Assistant</button>
 <button class="btn primary" id="newBtn" type="button">+ New RMA</button>
 <input class="importfile" id="importFile" type="file" accept=".json,.csv,application/json,text/csv">
 </div></header>
@@ -93,12 +102,24 @@ tbody tr:hover{background:var(--blue)}
 <fieldset class="group"><legend>Progress note</legend><div class="fields"><label class="wide">New note<textarea id="noteText" maxlength="10000" placeholder="What changed? What is the next action?"></textarea></label></div><div class="actions compact"><button class="btn" id="addNoteBtn" type="button">Add note</button><button class="btn" id="caseAssistantBtn" type="button">Ask ChatGPT about this RMA</button></div></fieldset>
 <fieldset class="group"><legend>History</legend><ul class="log" id="history"></ul></fieldset>
 </div></div></div>
-<div class="modal" id="assistant" role="dialog" aria-modal="true" aria-labelledby="assistantTitle" hidden><div class="dialog narrow"><header class="modalhead"><div><div class="eyebrow">OPTIONAL ASSISTANCE</div><h2 id="assistantTitle">ChatGPT Assistant</h2><p>Your RMA records are never automatically transmitted.</p></div><button class="btn small" id="exitAssistant" type="button">Close</button></header>
+<div class="modal" id="assistant" role="dialog" aria-modal="true" aria-labelledby="assistantTitle" hidden><div class="dialog narrow"><header class="modalhead"><div><h2 id="assistantTitle">Assistant</h2></div><button class="btn small" id="exitAssistant" type="button">Close</button></header>
 <div class="modalbody"><fieldset class="group"><legend>What do you want help with?</legend>
 <div class="fields"><label class="wide">Task<select id="aiTask"><option value="guide">Explain the next workflow action</option><option value="root">Brainstorm root causes and containment</option><option value="action">Draft a corrective action plan</option><option value="reply">Draft a professional customer response</option><option value="audit">Review case completeness</option></select></label></div>
-<p class="helper">Only the workflow stage is included by default. Check each field you choose to share outside the local app.</p>
+<p class="helper">Select any RMA fields to include when sending a message.</p>
 <div class="checkrow"><label class="check"><input id="shareIssue" type="checkbox"> Include defect / issue description</label><label class="check"><input id="shareCase" type="checkbox"> Include RMA number and part number</label><label class="check"><input id="shareCustomer" type="checkbox"> Include customer and PO</label><label class="check"><input id="shareNotes" type="checkbox"> Include recent progress notes</label></div>
-</fieldset><fieldset class="group"><legend>Review before copying</legend><div id="aiPreview" class="assistantpreview"></div><p class="helper">This action copies your chosen prompt and opens ChatGPT separately. Paste it there yourself. This is not an embedded login or automatic integration.</p></fieldset>
+</fieldset>
+<fieldset class="group" id="liveAssistantPanel"><legend>In-app assistant</legend>
+<div class="fields">
+<label class="wide">Gateway URL<input id="assistantGateway" type="url" inputmode="url" placeholder="https://your-worker.workers.dev" autocomplete="url"></label>
+<label class="wide">Access code<input id="assistantCode" type="password" autocomplete="off" placeholder="Gateway access code (not your OpenAI API key)"></label>
+<label class="wide">Message<textarea id="assistantQuestion" rows="3" maxlength="1500" placeholder="What do you want to know about this RMA?"></textarea></label>
+</div>
+<details class="compact" open><summary>Review data to send</summary><div id="assistantOutbound" class="assistantpreview compact" role="region" aria-label="Outgoing assistant request"></div></details>
+<div class="bottom"><span id="assistantConnectionStatus" class="msg" role="status" aria-live="polite">Gateway not configured.</span><div class="actions"><button class="btn primary" id="assistantSend" type="button">Send</button><button class="btn" id="assistantReset" type="button">Clear chat</button></div></div>
+<div class="assistant-stream" id="assistantTranscript" aria-live="polite"></div>
+<div class="actions compact"><button type="button" class="btn" id="assistantToNote" hidden>Draft into RMA note</button></div>
+</fieldset>
+<fieldset class="group"><legend>Copy to ChatGPT (manual)</legend><div id="aiPreview" class="assistantpreview"></div><p class="helper">Copies the selected prompt for manual use without the gateway.</p></fieldset>
 <div class="bottom"><span class="msg" id="aiMessage"></span><div class="actions"><button class="btn" type="button" id="copyOnly">Copy prompt</button><button class="btn primary" id="openChat" type="button">Copy &amp; Open ChatGPT</button></div></div></div></div></div>
 <script>
 "use strict";
@@ -199,8 +220,73 @@ let added=0,skipped=0;const batch=[];const seenIds=new Set(records.map(r=>r.id))
 try{await persistMany(batch)}catch(e){records=records.filter(x=>!batch.includes(x));throw e}render();notify("Imported "+added+" RMA(s). Skipped "+skipped+" duplicate(s).")}
 function assistantPrompt(){const r=records.find(x=>x.id===assistantId);const task=$("aiTask").value;const request={guide:"Explain the next RMA workflow step and any questions to ask.",root:"Suggest likely root causes, containment and verification steps without inventing evidence.",action:"Draft a clear corrective action plan, with owners, evidence and verification.",reply:"Draft a concise professional customer response; mark unknown facts clearly.",audit:"Audit the RMA details for missing actions, decisions and closure risks."}[task];let parts=["Act as a manufacturing quality engineer assisting with a locally stored RMA. Do not assume unstated facts.",request];if(r){parts.push("Current workflow stage: "+stage(r).label+". Current responsible department: "+stage(r).team+".");const pending=r.stage==="COMPLETE"?closureBlockers(r):blockers(r);if(pending.length)parts.push("Outstanding requirements: "+pending.join("; "));if($("shareIssue").checked)parts.push("Defect: "+(r.defectType||"unspecified")+". Issue description: "+(r.description||"unspecified")+". Discrepancy: "+(r.discrepancy||"unspecified"));if($("shareCase").checked)parts.push("RMA: "+(r.rmaNumber||r.caseNumber)+". Part: "+(r.partNumber||"not entered"));if($("shareCustomer").checked)parts.push("Customer: "+(r.customer||"not entered")+". PO: "+(r.purchaseOrder||"not entered"));if($("shareNotes").checked)parts.push("Recent progress notes: "+r.notes.slice(-5).map(n=>n.text).join(" | "))}else parts.push("No specific case selected.");parts.push("Please distinguish recommendations from verified facts.");return parts.join("\n\n")}
 function previewAi(){$("aiPreview").textContent=assistantPrompt()}
-function showAssistant(r){assistantId=r?.id||null;for(const key of ["shareIssue","shareCase","shareCustomer","shareNotes"])$(key).checked=false;$("aiTask").value="guide";$("aiMessage").textContent="";previewAi();$("assistant").hidden=false}
+function showAssistant(r){assistantId=r?.id||null;for(const key of ["shareIssue","shareCase","shareCustomer","shareNotes"])$(key).checked=false;$("aiTask").value="guide";$("aiMessage").textContent="";try{$("assistantGateway").value=localStorage.getItem("ezRmaGatewayUrl")||""}catch{}$("assistantCode").value="";$("assistantQuestion").value="";clearAssistantChat();$("assistantConnectionStatus").textContent=$("assistantGateway").value?"Enter access code.":"Gateway not configured.";previewAi();outboundPreview();$("assistant").hidden=false;}
 async function copyPrompt(open){const text=assistantPrompt();try{await navigator.clipboard.writeText(text);$("aiMessage").textContent="Prompt copied. Paste it into ChatGPT."}catch{const temp=document.createElement("textarea");temp.value=text;document.body.append(temp);temp.select();const ok=document.execCommand("copy");temp.remove();$("aiMessage").textContent=ok?"Prompt copied. Paste it into ChatGPT.":"Clipboard unavailable. Select the preview text and copy it manually."}if(open)window.open("https://chatgpt.com/","_blank","noopener,noreferrer")}
+
+let assistantTurns=[],assistantBusy=false,assistantAbort=null,assistantLastReply="";
+function assistantEndpoint(raw){
+ let endpoint;try{endpoint=new URL(String(raw||"").trim())}catch{throw Error("Enter a valid HTTPS gateway URL.")}
+ if(endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash)throw Error("Gateway must be a plain HTTPS address.");
+ if(endpoint.pathname==="/"||endpoint.pathname==="")endpoint.pathname="/chat";
+ else if(!endpoint.pathname.endsWith("/chat"))throw Error("Gateway path must end in /chat.");
+ return endpoint.href;
+}
+function outboundPreview(){
+ if(!$("assistantOutbound"))return;
+ const history=assistantTurns.length?assistantTurns.map(t=>(t.role==="user"?"You: ":"Assistant: ")+t.content).join("\n"):"(none)";
+ $("assistantOutbound").textContent="Selected RMA context:\n"+assistantPrompt()+"\n\nChat history:\n"+history+"\n\nYour message:\n"+($("assistantQuestion").value||"");
+}
+function clearAssistantChat(){
+ assistantTurns=[];assistantLastReply="";$("assistantTranscript").replaceChildren();$("assistantToNote").hidden=true;
+ $("assistantConnectionStatus").textContent="Chat cleared.";outboundPreview();
+}
+function closeAssistantDialog(){
+ if(assistantAbort)assistantAbort.abort();$("assistant").hidden=true;
+}
+function appendAssistantLine(role,text){
+ const entry=document.createElement("div");entry.className="assistant-line";
+ const tag=document.createElement("strong");tag.textContent=role==="assistant"?"Assistant":"You";
+ const body=document.createElement("div");body.textContent=text;entry.append(tag,body);
+ $("assistantTranscript").append(entry);$("assistantTranscript").scrollTop=$("assistantTranscript").scrollHeight;
+}
+async function sendAssistantMessage(){
+ if(assistantBusy)return;
+ const message=$("assistantQuestion").value.trim();
+ const accessCode=$("assistantCode").value.trim();
+ if(!message){$("assistantConnectionStatus").textContent="Enter a message.";return}
+ if(accessCode.length<32){$("assistantConnectionStatus").textContent="Enter your separate gateway access code (at least 32 characters).";return}
+ let endpoint;try{endpoint=assistantEndpoint($("assistantGateway").value)}catch(e){$("assistantConnectionStatus").textContent=e.message;return}
+ const context=assistantPrompt();
+ if(context.length>6500){$("assistantConnectionStatus").textContent="Selected case details are too long. Share fewer fields.";return}
+ assistantBusy=true;$("assistantSend").disabled=true;
+ $("assistantConnectionStatus").textContent="Sending...";
+ assistantAbort=new AbortController();
+ try{
+  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessCode},body:JSON.stringify({message,context,history:assistantTurns.slice(-10)}),signal:assistantAbort.signal,cache:"no-store"});
+  let data;try{data=await response.json()}catch{throw Error("Gateway returned an invalid response.")}
+  if(!response.ok)throw Error(data?.error||"Assistant request failed.");
+  if(typeof data.answer!=="string"||!data.answer.trim())throw Error("Empty assistant response.");
+  appendAssistantLine("user",message);appendAssistantLine("assistant",data.answer);
+  assistantLastReply=data.answer;
+  assistantTurns.push({role:"user",content:message.slice(0,1500)},{role:"assistant",content:data.answer.slice(0,1500)});
+  assistantTurns=assistantTurns.slice(-10);
+  $("assistantQuestion").value="";
+  $("assistantConnectionStatus").textContent="Connected";
+  $("assistantToNote").hidden=!assistantId||!!records.find(r=>r.id===assistantId)?.closedAt;
+  try{localStorage.setItem("ezRmaGatewayUrl",endpoint)}catch{}
+ }catch(e){
+  $("assistantConnectionStatus").textContent=e.name==="AbortError"?"Request cancelled.":(e instanceof TypeError?"Could not reach gateway. Check URL and deployment.":e.message||"Request failed.");
+ }finally{assistantBusy=false;$("assistantSend").disabled=false;assistantAbort=null;outboundPreview()}
+}
+function assistantReplyToNote(){
+ if(!assistantLastReply||!assistantId||currentId!==assistantId||$("editor").hidden)return;
+ const r=records.find(x=>x.id===assistantId);if(!r||r.closedAt)return;
+ const draft="[AI-assisted draft. Verify accuracy before saving.]\n"+assistantLastReply;
+ $("noteText").value=draft.slice(0,10000);
+ closeAssistantDialog();
+ $("noteText").focus();
+}
+
 function guard(fn){return async(...args)=>{if(busy)return;busy=true;try{await fn(...args)}catch(e){console.error(e);setValidation([e.message||"Operation failed."]);notify("Operation failed: "+(e.message||"Unknown error"))}finally{busy=false}}}
 function attach(){for(const ev of ["input","change"])$("recordForm").addEventListener(ev,()=>{dirty=true});window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 for(const key of ["search","stageFilter","stateFilter"])$(key).addEventListener(key==="search"?"input":"change",render);$("rows").addEventListener("click",e=>{const b=e.target.closest("[data-open],[data-close],[data-delete]");if(!b)return;const rid=b.dataset.open||b.dataset.close||b.dataset.delete;const r=records.find(x=>x.id===rid);if(!r)return;if(b.hasAttribute("data-open"))showEditor(r);else if(b.hasAttribute("data-close"))guard(()=>closeRecord(r))();else guard(()=>deleteRecord(r))()});
@@ -211,10 +297,12 @@ $("advanceBtn").onclick=guard(advance);$("closeBtn").onclick=guard(closeRma);$("
 $("backupBtn").onclick=()=>{try{localStorage.setItem("ezRmaLastBackup",String(Date.now()))}catch{}download(JSON.stringify({format:FORMAT,exportedAt:now(),records},null,2),"ez-rma-backup-"+today()+".json","application/json");notify("Full local JSON backup downloaded.")};
 $("csvBtn").onclick=exportCsv;$("importBtn").onclick=()=>$("importFile").click();$("importFile").onchange=guard(async e=>{const file=e.target.files?.[0];if(file)await importFile(file);e.target.value=""});
 $("printBtn").onclick=()=>window.print();$("chatBtn").onclick=()=>showAssistant(null);$("caseAssistantBtn").onclick=()=>{const r=current();if(r)showAssistant(r)};
-$("exitAssistant").onclick=()=>$("assistant").hidden=true;$("assistant").addEventListener("click",e=>{if(e.target===$("assistant"))$("assistant").hidden=true});
-for(const key of ["aiTask","shareIssue","shareCase","shareCustomer","shareNotes"])$(key).addEventListener("change",previewAi);
+$("exitAssistant").onclick=closeAssistantDialog;$("assistant").addEventListener("click",e=>{if(e.target===$("assistant"))closeAssistantDialog()});
+for(const key of ["aiTask","shareIssue","shareCase","shareCustomer","shareNotes"])$(key).addEventListener("change",()=>{previewAi();outboundPreview()});
+$("assistantQuestion").addEventListener("input",outboundPreview);
+$("assistantSend").onclick=sendAssistantMessage;$("assistantReset").onclick=clearAssistantChat;$("assistantToNote").onclick=assistantReplyToNote;
 $("copyOnly").onclick=()=>copyPrompt(false);$("openChat").onclick=()=>copyPrompt(true);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("assistant").hidden)$("assistant").hidden=true;else if(!$("editor").hidden)hideEditor()}})}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("assistant").hidden)closeAssistantDialog();else if(!$("editor").hidden)hideEditor()}})}
 async function start(){attach();try{db=await openStore();records=(await readAll()).map(normalize);render();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch{}
 try{const lb=Number(localStorage.getItem("ezRmaLastBackup")||0);if(records.length&&Date.now()-lb>30*86400000)notify("No backup in 30+ days. Data lives only in this browser, so use Backup JSON.")}catch{}}
