@@ -1,0 +1,21 @@
+name: rma-local-smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-rma/**'
+      - '.github/workflows/rma-local-smoke.yml'
+  pull_request:
+    paths:
+      - 'web-rma/**'
+      - '.github/workflows/rma-local-smoke.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test standalone RMA business rules and data isolation
+        run: node --test web-rma/smoke.test.cjs
