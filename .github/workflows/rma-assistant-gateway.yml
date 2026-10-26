@@ -1,0 +1,22 @@
+name: rma-assistant-gateway
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-rma/gateway/**'
+      - '.github/workflows/rma-assistant-gateway.yml'
+  pull_request:
+    paths:
+      - 'web-rma/gateway/**'
+      - '.github/workflows/rma-assistant-gateway.yml'
+
+jobs:
+  mock-gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify gateway auth, privacy and mocked OpenAI requests
+        run: node --test web-rma/gateway/gateway.test.mjs
