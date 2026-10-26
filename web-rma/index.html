@@ -9,7 +9,7 @@
 <title>EZ RMA Local</title>
 <style>
 :root{color-scheme:dark;--bg:#090909;--panel:#151515;--raised:#202020;--line:#545454;--text:#f6f6f6;--muted:#b5b5b5;--white:#f1f1f1;--blue:#012E69;--gray:#545454}
-*{box-sizing:border-box}html{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px}body{margin:0;background:var(--bg);color:var(--text);line-height:1.45}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:inherit}.shell{max-width:1480px;margin:auto;padding:0 23px 48px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:22px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.mark{width:45px;height:45px;border:2px solid var(--white);border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:20px;letter-spacing:-2px}.eyebrow{font-size:.72rem;letter-spacing:.16em;color:var(--muted);font-weight:700}.brand h1{font-size:1.25rem;margin:3px 0 0;line-height:1.1}.buttons{display:flex;gap:8px;flex-wrap:wrap}.btn{background:var(--raised);color:var(--text);border:1px solid var(--line);padding:10px 14px;border-radius:8px;min-height:42px;font-weight:650}.btn:hover{border-color:var(--white)}.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--white);outline-offset:2px}.btn.primary{background:var(--white);color:#090909;border-color:var(--white)}.btn.small{min-height:33px;padding:6px 10px;font-size:.83rem}.hero{display:flex;justify-content:space-between;gap:18px;margin:31px 0 22px;flex-wrap:wrap}.hero h2{font-size:1.75rem;letter-spacing:-.035em;margin:3px 0 6px}.hero p{margin:0;color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:114px;padding:16px}.kpi label{font-size:.85rem;color:var(--muted)}.kpi strong{display:block;font-size:2.03rem;font-variant-numeric:tabular-nums;line-height:1.12;margin:12px 0 3px}.kpi small{font-size:.77rem;color:var(--muted)}.sectionhead{margin:28px 0 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.sectionhead h3{font-size:1.06rem;margin:0}.heat{display:flex;gap:6px;flex-wrap:wrap}.heat span{font-size:.77rem;color:var(--muted);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:5px 8px}.toolbar{display:grid;grid-template-columns:minmax(160px,2fr) minmax(140px,1fr) minmax(130px,1fr) auto;gap:9px;margin:15px 0}input:not([type=checkbox]),select,textarea{width:100%;min-height:41px;padding:10px 11px;border-radius:7px;border:1px solid var(--line);background:#101010;color:var(--text)}textarea{resize:vertical;min-height:80px}input::placeholder,textarea::placeholder{color:#999}.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:900px}th,td{text-align:left;vertical-align:middle;padding:12px 14px;border-bottom:1px solid var(--line)}th{background:#1b1b1b;font-size:.73rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap}tbody tr:last-child td{border:0}tbody tr:hover{background:var(--raised)}td small{display:block;font-size:.79rem;color:var(--muted);margin-top:3px}.link{background:none;color:var(--text);border:0;padding:0;text-decoration:underline;text-underline-offset:3px;font-weight:750;text-align:left}.pill{display:inline-block;white-space:nowrap;border:1px solid #777;border-radius:99px;padding:4px 9px;font-size:.77rem}.pill.due{border-style:dashed}.empty{text-align:center;padding:45px 20px;color:var(--muted)}.empty strong{display:block;font-size:1.05rem;color:var(--text);margin-bottom:7px}.toast{padding:12px 14px;border:1px solid #777;border-radius:8px;background:var(--raised);margin:14px 0;font-size:.87rem}.modal[hidden],.toast[hidden],[hidden]{display:none!important}.modal{position:fixed;inset:0;z-index:10;background:#000e;display:grid;place-items:center;padding:12px}.dialog{width:min(1100px,100%);max-height:96vh;overflow-y:auto;background:var(--panel);border:1px solid #666;border-radius:12px;box-shadow:0 28px 70px #000}.dialog.narrow{width:min(750px,100%)}.modalhead{padding:21px 24px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:start;gap:16px}.modalhead h2{font-size:1.45rem;margin:3px 0}.modalhead p{margin:0;color:var(--muted);font-size:.84rem}.modalbody{padding:0 24px 22px}.group{border:0;border-bottom:1px solid var(--line);padding:20px 0;margin:0}.group legend{display:block;float:left;width:100%;font-weight:750;padding:0;margin:0 0 12px}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;clear:both}.fields label{font-size:.82rem;color:var(--muted);font-weight:650}.fields label.wide{grid-column:1/-1}.fields input,.fields select,.fields textarea{margin-top:5px}.checkrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;clear:both}.check{display:flex;align-items:center;gap:7px;color:var(--text);font-size:.86rem}.check input{accent-color:#eee;width:18px;height:18px}.rail{display:flex;flex-wrap:wrap;gap:7px;clear:both}.step{font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:8px 10px}.step.done{color:var(--text)}.step.now{color:var(--text);border-color:var(--white);font-weight:750;background:var(--raised)}.bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:19px 0;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap}.log{clear:both;list-style:none;margin:0;padding:0}.log li{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere;white-space:pre-wrap;font-size:.88rem}.log li:last-child{border:0}.log time{display:block;color:var(--muted);font-size:.76rem;margin-bottom:4px}.msg{color:var(--muted);font-size:.84rem;min-height:1.25em}.helper{font-size:.82rem;color:var(--muted);margin:7px 0}.assistantpreview{white-space:pre-wrap;overflow-wrap:anywhere;background:#101010;border:1px solid var(--line);padding:12px;border-radius:7px;max-height:220px;overflow:auto;font-size:.85rem}.importfile{display:none}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(100%)}.compact{margin-top:11px}
+*{box-sizing:border-box}html{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px}body{margin:0;background:var(--bg);color:var(--text);line-height:1.45}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:inherit}.shell{max-width:1480px;margin:auto;padding:0 23px 48px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:22px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.mark{width:45px;height:45px;border:2px solid var(--white);border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:20px;letter-spacing:-2px}.eyebrow{font-size:.72rem;letter-spacing:.16em;color:var(--muted);font-weight:700}.brand h1{font-size:1.25rem;margin:3px 0 0;line-height:1.1}.buttons{display:flex;gap:8px;flex-wrap:wrap}.btn{background:var(--raised);color:var(--text);border:1px solid var(--line);padding:10px 14px;border-radius:8px;min-height:42px;font-weight:650}.btn:hover{border-color:var(--white)}.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--white);outline-offset:2px}.btn.primary{background:var(--white);color:#090909;border-color:var(--white)}.btn.small{min-height:33px;padding:6px 10px;font-size:.83rem}.hero{display:flex;justify-content:space-between;gap:18px;margin:31px 0 22px;flex-wrap:wrap}.hero h2{font-size:1.75rem;letter-spacing:-.035em;margin:3px 0 6px}.hero p{margin:0;color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:114px;padding:16px}.kpi label{font-size:.85rem;color:var(--muted)}.kpi strong{display:block;font-size:2.03rem;font-variant-numeric:tabular-nums;line-height:1.12;margin:12px 0 3px}.kpi small{font-size:.77rem;color:var(--muted)}.sectionhead{margin:28px 0 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.sectionhead h3{font-size:1.06rem;margin:0}.heat{display:flex;gap:6px;flex-wrap:wrap}.heat span{font-size:.77rem;color:var(--muted);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:5px 8px}.toolbar{display:grid;grid-template-columns:minmax(160px,2fr) minmax(140px,1fr) minmax(130px,1fr) auto;gap:9px;margin:15px 0}input:not([type=checkbox]),select,textarea{width:100%;min-height:41px;padding:10px 11px;border-radius:7px;border:1px solid var(--line);background:#101010;color:var(--text)}textarea{resize:vertical;min-height:80px}input::placeholder,textarea::placeholder{color:#999}.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:900px}th,td{text-align:left;vertical-align:middle;padding:12px 14px;border-bottom:1px solid var(--line)}th{background:#1b1b1b;font-size:.73rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap}tbody tr:last-child td{border:0}tbody tr:hover{background:var(--raised)}td small{display:block;font-size:.79rem;color:var(--muted);margin-top:3px}.link{background:none;color:var(--text);border:0;padding:0;text-decoration:underline;text-underline-offset:3px;font-weight:750;text-align:left}.pill{display:inline-block;white-space:nowrap;border:1px solid #777;border-radius:99px;padding:4px 9px;font-size:.77rem}.pill.due{border-style:dashed}.empty{text-align:center;padding:45px 20px;color:var(--muted)}.empty strong{display:block;font-size:1.05rem;color:var(--text);margin-bottom:7px}.toast{padding:12px 14px;border:1px solid #777;border-radius:8px;background:var(--raised);margin:14px 0;font-size:.87rem}.modal[hidden],.toast[hidden],[hidden]{display:none!important}.modal{position:fixed;inset:0;z-index:10;background:#000e;display:grid;place-items:center;padding:12px}.dialog{width:min(1100px,100%);max-height:96vh;overflow-y:auto;background:var(--panel);border:1px solid #666;border-radius:12px;box-shadow:0 28px 70px #000}.dialog.narrow{width:min(750px,100%)}.modalhead{padding:21px 24px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:start;gap:16px}.modalhead h2{font-size:1.45rem;margin:3px 0}.modalhead p{margin:0;color:var(--muted);font-size:.84rem}.modalbody{padding:0 24px 22px}.group{border:0;border-bottom:1px solid var(--line);padding:20px 0;margin:0}.group legend{display:block;float:left;width:100%;font-weight:750;padding:0;margin:0 0 12px}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;clear:both}.fields label{font-size:.82rem;color:var(--muted);font-weight:650}.fields label.wide{grid-column:1/-1}.fields input,.fields select,.fields textarea{margin-top:5px}.checkrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;clear:both}.check{display:flex;align-items:center;gap:7px;color:var(--text);font-size:.86rem}.check input{accent-color:#eee;width:18px;height:18px}.rail{display:flex;flex-wrap:wrap;gap:7px;clear:both}.step{font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:8px 10px}.step.done{color:var(--text)}.step.now{color:var(--text);border-color:var(--white);font-weight:750;background:var(--raised)}.bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:19px 0;flex-wrap:wrap}.actions{display:flex;gap:8px;flex-wrap:wrap}.log{clear:both;list-style:none;margin:0;padding:0}.log li{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere;white-space:pre-wrap;font-size:.88rem}.log li:last-child{border:0}.log time{display:block;color:var(--muted);font-size:.76rem;margin-bottom:4px}.msg{color:var(--muted);font-size:.84rem;min-height:1.25em}.helper{font-size:.82rem;color:var(--muted);margin:7px 0}.importfile{display:none}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(100%)}.compact{margin-top:11px}
 
 /* company brand palette: deep navy #012E69, gray #545454, black, white. */
 .top{border-bottom:3px solid var(--blue)}
@@ -34,14 +34,6 @@ tbody tr:hover{background:var(--blue)}
 .step.now{background:var(--blue);color:var(--white);border-color:var(--gray)}
 
 
-.assistant-stream{max-height:280px;overflow-y:auto;margin-top:10px;border:1px solid var(--gray);border-radius:8px}
-.assistant-stream:empty{display:none}
-.assistant-line{padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid var(--line);font-size:.9rem}
-.assistant-line:last-child{border-bottom:0}
-.assistant-line strong{display:block;color:var(--white);margin-bottom:5px}
-.assistant-line:nth-child(even){background:var(--raised)}
-#liveAssistantPanel summary{cursor:pointer;font-weight:650;color:var(--white)}
-
 @media(max-width:940px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.shell{padding:0 13px 28px}.top{padding:15px 0}.buttons{width:100%}.buttons .btn{flex:1}.hero{margin:20px 0}.hero h2{font-size:1.43rem}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{min-height:101px;padding:12px}.kpi strong{font-size:1.62rem}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.modal{padding:0}.dialog{max-height:100vh;height:100vh;border-radius:0}.modalhead{padding:16px}.modalbody{padding:0 16px 18px}.fields{grid-template-columns:1fr}.fields label.wide{grid-column:auto}}
 @media print{body{background:white;color:black}.buttons,.toolbar,.modal,.toast,.heat{display:none!important}.kpi,.tablewrap{background:white;color:black;border-color:#999}.kpi label,.kpi small,th,td{color:black;border-color:#aaa}.shell{max-width:none;padding:0}}
@@ -54,7 +46,6 @@ tbody tr:hover{background:var(--blue)}
 <button class="btn" id="backupBtn" type="button">Backup JSON</button>
 <button class="btn" id="csvBtn" type="button">Export CSV</button>
 <button class="btn" id="importBtn" type="button">Import</button>
-<button class="btn" id="chatBtn" type="button">Assistant</button>
 <button class="btn primary" id="newBtn" type="button">+ New RMA</button>
 <input class="importfile" id="importFile" type="file" accept=".json,.csv,application/json,text/csv">
 </div></header>
@@ -99,28 +90,9 @@ tbody tr:hover{background:var(--blue)}
 <div id="validation" class="toast" hidden role="alert"></div>
 <div class="bottom"><span id="editorStatus" class="msg"></span><div class="actions"><button id="deleteBtn" class="btn" type="button">Delete RMA</button><button id="saveBtn" class="btn" type="submit">Save draft</button><button id="advanceBtn" class="btn primary" type="button">Complete / Advance</button><button id="closeBtn" class="btn primary" type="button">Close RMA</button><button id="reopenBtn" class="btn" type="button" hidden>Reopen RMA</button></div></div>
 </form>
-<fieldset class="group"><legend>Progress note</legend><div class="fields"><label class="wide">New note<textarea id="noteText" maxlength="10000" placeholder="What changed? What is the next action?"></textarea></label></div><div class="actions compact"><button class="btn" id="addNoteBtn" type="button">Add note</button><button class="btn" id="caseAssistantBtn" type="button">Ask ChatGPT about this RMA</button></div></fieldset>
+<fieldset class="group"><legend>Progress note</legend><div class="fields"><label class="wide">New note<textarea id="noteText" maxlength="10000" placeholder="What changed? What is the next action?"></textarea></label></div><div class="actions compact"><button class="btn" id="addNoteBtn" type="button">Add note</button></div></fieldset>
 <fieldset class="group"><legend>History</legend><ul class="log" id="history"></ul></fieldset>
 </div></div></div>
-<div class="modal" id="assistant" role="dialog" aria-modal="true" aria-labelledby="assistantTitle" hidden><div class="dialog narrow"><header class="modalhead"><div><h2 id="assistantTitle">Assistant</h2></div><button class="btn small" id="exitAssistant" type="button">Close</button></header>
-<div class="modalbody"><fieldset class="group"><legend>What do you want help with?</legend>
-<div class="fields"><label class="wide">Task<select id="aiTask"><option value="guide">Explain the next workflow action</option><option value="root">Brainstorm root causes and containment</option><option value="action">Draft a corrective action plan</option><option value="reply">Draft a professional customer response</option><option value="audit">Review case completeness</option></select></label></div>
-<p class="helper">Select any RMA fields to include when sending a message.</p>
-<div class="checkrow"><label class="check"><input id="shareIssue" type="checkbox"> Include defect / issue description</label><label class="check"><input id="shareCase" type="checkbox"> Include RMA number and part number</label><label class="check"><input id="shareCustomer" type="checkbox"> Include customer and PO</label><label class="check"><input id="shareNotes" type="checkbox"> Include recent progress notes</label></div>
-</fieldset>
-<fieldset class="group" id="liveAssistantPanel"><legend>In-app assistant</legend>
-<div class="fields">
-<label class="wide">Gateway URL<input id="assistantGateway" type="url" inputmode="url" placeholder="https://your-worker.workers.dev" autocomplete="url"></label>
-<label class="wide">Access code<input id="assistantCode" type="password" autocomplete="off" placeholder="Gateway access code (not your OpenAI API key)"></label>
-<label class="wide">Message<textarea id="assistantQuestion" rows="3" maxlength="1500" placeholder="What do you want to know about this RMA?"></textarea></label>
-</div>
-<details class="compact" open><summary>Review data to send</summary><div id="assistantOutbound" class="assistantpreview compact" role="region" aria-label="Outgoing assistant request"></div></details>
-<div class="bottom"><span id="assistantConnectionStatus" class="msg" role="status" aria-live="polite">Gateway not configured.</span><div class="actions"><button class="btn primary" id="assistantSend" type="button">Send</button><button class="btn" id="assistantReset" type="button">Clear chat</button></div></div>
-<div class="assistant-stream" id="assistantTranscript" aria-live="polite"></div>
-<div class="actions compact"><button type="button" class="btn" id="assistantToNote" hidden>Draft into RMA note</button></div>
-</fieldset>
-<fieldset class="group"><legend>Copy to ChatGPT (manual)</legend><div id="aiPreview" class="assistantpreview"></div><p class="helper">Copies the selected prompt for manual use without the gateway.</p></fieldset>
-<div class="bottom"><span class="msg" id="aiMessage"></span><div class="actions"><button class="btn" type="button" id="copyOnly">Copy prompt</button><button class="btn primary" id="openChat" type="button">Copy &amp; Open ChatGPT</button></div></div></div></div></div>
 <script>
 "use strict";
 const $=(id)=>document.getElementById(id);
@@ -134,7 +106,7 @@ const STAGES=[
 const TEXT_FIELDS=["rmaNumber","customer","purchaseOrder","defectType","csrName","owner","contactName","contactPhone","dueDate","partNumber","revision","quantity","description","discrepancy","receivedFromCustomer","receiveDate","workOrderRequired","workOrderIssued","workOrder","finalQualityResult","returnedToCustomerDate","recoveryStatus","recoveryRequested","recoveryReceived","reworkCost","scrapCost","freightCost","outsideCost","recoveryOwner","memoNumber"];
 const FLAGS=["holdAreaConfirmed","productReviewed","approvedToShip","readyToShip","shippedToCustomer","containmentRequired","containmentComplete","correctiveActionRequired","correctiveActionComplete","dispositionComplete"];
 const FORMAT="ez-rma-local-v1";
-let db=null,records=[],currentId=null,assistantId=null,noticeTimer=null,dirty=false,busy=false,lastFocus=null;
+let db=null,records=[],currentId=null,noticeTimer=null,dirty=false,busy=false,lastFocus=null;
 const now=()=>new Date().toISOString();
 function today(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
 function daysSince(v){if(!v)return 0;const ms=Date.now()-new Date(v).getTime();return Number.isFinite(ms)?Math.max(0,Math.floor(ms/86400000)):0}
@@ -218,75 +190,6 @@ if(file.name.toLowerCase().endsWith(".json")){const data=JSON.parse(text);if(dat
 else if(file.name.toLowerCase().endsWith(".csv"))incoming=mapCsv(text);else throw Error("Choose a .json or .csv file.");
 let added=0,skipped=0;const batch=[];const seenIds=new Set(records.map(r=>r.id)),seenRmas=new Set(records.filter(r=>r.rmaNumber).map(r=>r.rmaNumber.toLowerCase()));for(const r of incoming){if(seenIds.has(r.id)||(r.rmaNumber&&seenRmas.has(r.rmaNumber.toLowerCase()))){skipped++;continue}if(!r.caseNumber||records.some(x=>x.caseNumber===r.caseNumber))r.caseNumber=nextCase();batch.push(r);records.push(r);seenIds.add(r.id);if(r.rmaNumber)seenRmas.add(r.rmaNumber.toLowerCase());added++}
 try{await persistMany(batch)}catch(e){records=records.filter(x=>!batch.includes(x));throw e}render();notify("Imported "+added+" RMA(s). Skipped "+skipped+" duplicate(s).")}
-function assistantPrompt(){const r=records.find(x=>x.id===assistantId);const task=$("aiTask").value;const request={guide:"Explain the next RMA workflow step and any questions to ask.",root:"Suggest likely root causes, containment and verification steps without inventing evidence.",action:"Draft a clear corrective action plan, with owners, evidence and verification.",reply:"Draft a concise professional customer response; mark unknown facts clearly.",audit:"Audit the RMA details for missing actions, decisions and closure risks."}[task];let parts=["Act as a manufacturing quality engineer assisting with a locally stored RMA. Do not assume unstated facts.",request];if(r){parts.push("Current workflow stage: "+stage(r).label+". Current responsible department: "+stage(r).team+".");const pending=r.stage==="COMPLETE"?closureBlockers(r):blockers(r);if(pending.length)parts.push("Outstanding requirements: "+pending.join("; "));if($("shareIssue").checked)parts.push("Defect: "+(r.defectType||"unspecified")+". Issue description: "+(r.description||"unspecified")+". Discrepancy: "+(r.discrepancy||"unspecified"));if($("shareCase").checked)parts.push("RMA: "+(r.rmaNumber||r.caseNumber)+". Part: "+(r.partNumber||"not entered"));if($("shareCustomer").checked)parts.push("Customer: "+(r.customer||"not entered")+". PO: "+(r.purchaseOrder||"not entered"));if($("shareNotes").checked)parts.push("Recent progress notes: "+r.notes.slice(-5).map(n=>n.text).join(" | "))}else parts.push("No specific case selected.");parts.push("Please distinguish recommendations from verified facts.");return parts.join("\n\n")}
-function previewAi(){$("aiPreview").textContent=assistantPrompt()}
-function showAssistant(r){assistantId=r?.id||null;for(const key of ["shareIssue","shareCase","shareCustomer","shareNotes"])$(key).checked=false;$("aiTask").value="guide";$("aiMessage").textContent="";try{$("assistantGateway").value=localStorage.getItem("ezRmaGatewayUrl")||""}catch{}$("assistantCode").value="";$("assistantQuestion").value="";clearAssistantChat();$("assistantConnectionStatus").textContent=$("assistantGateway").value?"Enter access code.":"Gateway not configured.";previewAi();outboundPreview();$("assistant").hidden=false;}
-async function copyPrompt(open){const text=assistantPrompt();try{await navigator.clipboard.writeText(text);$("aiMessage").textContent="Prompt copied. Paste it into ChatGPT."}catch{const temp=document.createElement("textarea");temp.value=text;document.body.append(temp);temp.select();const ok=document.execCommand("copy");temp.remove();$("aiMessage").textContent=ok?"Prompt copied. Paste it into ChatGPT.":"Clipboard unavailable. Select the preview text and copy it manually."}if(open)window.open("https://chatgpt.com/","_blank","noopener,noreferrer")}
-
-let assistantTurns=[],assistantBusy=false,assistantAbort=null,assistantLastReply="";
-function assistantEndpoint(raw){
- let endpoint;try{endpoint=new URL(String(raw||"").trim())}catch{throw Error("Enter a valid HTTPS gateway URL.")}
- if(endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash)throw Error("Gateway must be a plain HTTPS address.");
- if(endpoint.pathname==="/"||endpoint.pathname==="")endpoint.pathname="/chat";
- else if(!endpoint.pathname.endsWith("/chat"))throw Error("Gateway path must end in /chat.");
- return endpoint.href;
-}
-function outboundPreview(){
- if(!$("assistantOutbound"))return;
- const history=assistantTurns.length?assistantTurns.map(t=>(t.role==="user"?"You: ":"Assistant: ")+t.content).join("\n"):"(none)";
- $("assistantOutbound").textContent="Selected RMA context:\n"+assistantPrompt()+"\n\nChat history:\n"+history+"\n\nYour message:\n"+($("assistantQuestion").value||"");
-}
-function clearAssistantChat(){
- assistantTurns=[];assistantLastReply="";$("assistantTranscript").replaceChildren();$("assistantToNote").hidden=true;
- $("assistantConnectionStatus").textContent="Chat cleared.";outboundPreview();
-}
-function closeAssistantDialog(){
- if(assistantAbort)assistantAbort.abort();$("assistant").hidden=true;
-}
-function appendAssistantLine(role,text){
- const entry=document.createElement("div");entry.className="assistant-line";
- const tag=document.createElement("strong");tag.textContent=role==="assistant"?"Assistant":"You";
- const body=document.createElement("div");body.textContent=text;entry.append(tag,body);
- $("assistantTranscript").append(entry);$("assistantTranscript").scrollTop=$("assistantTranscript").scrollHeight;
-}
-async function sendAssistantMessage(){
- if(assistantBusy)return;
- const message=$("assistantQuestion").value.trim();
- const accessCode=$("assistantCode").value.trim();
- if(!message){$("assistantConnectionStatus").textContent="Enter a message.";return}
- if(accessCode.length<32){$("assistantConnectionStatus").textContent="Enter your separate gateway access code (at least 32 characters).";return}
- let endpoint;try{endpoint=assistantEndpoint($("assistantGateway").value)}catch(e){$("assistantConnectionStatus").textContent=e.message;return}
- const context=assistantPrompt();
- if(context.length>6500){$("assistantConnectionStatus").textContent="Selected case details are too long. Share fewer fields.";return}
- assistantBusy=true;$("assistantSend").disabled=true;
- $("assistantConnectionStatus").textContent="Sending...";
- assistantAbort=new AbortController();
- try{
-  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessCode},body:JSON.stringify({message,context,history:assistantTurns.slice(-10)}),signal:assistantAbort.signal,cache:"no-store"});
-  let data;try{data=await response.json()}catch{throw Error("Gateway returned an invalid response.")}
-  if(!response.ok)throw Error(data?.error||"Assistant request failed.");
-  if(typeof data.answer!=="string"||!data.answer.trim())throw Error("Empty assistant response.");
-  appendAssistantLine("user",message);appendAssistantLine("assistant",data.answer);
-  assistantLastReply=data.answer;
-  assistantTurns.push({role:"user",content:message.slice(0,1500)},{role:"assistant",content:data.answer.slice(0,1500)});
-  assistantTurns=assistantTurns.slice(-10);
-  $("assistantQuestion").value="";
-  $("assistantConnectionStatus").textContent="Connected";
-  $("assistantToNote").hidden=!assistantId||!!records.find(r=>r.id===assistantId)?.closedAt;
-  try{localStorage.setItem("ezRmaGatewayUrl",endpoint)}catch{}
- }catch(e){
-  $("assistantConnectionStatus").textContent=e.name==="AbortError"?"Request cancelled.":(e instanceof TypeError?"Could not reach gateway. Check URL and deployment.":e.message||"Request failed.");
- }finally{assistantBusy=false;$("assistantSend").disabled=false;assistantAbort=null;outboundPreview()}
-}
-function assistantReplyToNote(){
- if(!assistantLastReply||!assistantId||currentId!==assistantId||$("editor").hidden)return;
- const r=records.find(x=>x.id===assistantId);if(!r||r.closedAt)return;
- const draft="[AI-assisted draft. Verify accuracy before saving.]\n"+assistantLastReply;
- $("noteText").value=draft.slice(0,10000);
- closeAssistantDialog();
- $("noteText").focus();
-}
-
 function guard(fn){return async(...args)=>{if(busy)return;busy=true;try{await fn(...args)}catch(e){console.error(e);setValidation([e.message||"Operation failed."]);notify("Operation failed: "+(e.message||"Unknown error"))}finally{busy=false}}}
 function attach(){for(const ev of ["input","change"])$("recordForm").addEventListener(ev,()=>{dirty=true});window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 for(const key of ["search","stageFilter","stateFilter"])$(key).addEventListener(key==="search"?"input":"change",render);$("rows").addEventListener("click",e=>{const b=e.target.closest("[data-open],[data-close],[data-delete]");if(!b)return;const rid=b.dataset.open||b.dataset.close||b.dataset.delete;const r=records.find(x=>x.id===rid);if(!r)return;if(b.hasAttribute("data-open"))showEditor(r);else if(b.hasAttribute("data-close"))guard(()=>closeRecord(r))();else guard(()=>deleteRecord(r))()});
@@ -296,13 +199,8 @@ $("recordForm").onsubmit=e=>{e.preventDefault();guard(async()=>{const r=await sa
 $("advanceBtn").onclick=guard(advance);$("closeBtn").onclick=guard(closeRma);$("deleteBtn").onclick=guard(deleteRma);$("reopenBtn").onclick=guard(reopen);$("addNoteBtn").onclick=guard(addNote);
 $("backupBtn").onclick=()=>{try{localStorage.setItem("ezRmaLastBackup",String(Date.now()))}catch{}download(JSON.stringify({format:FORMAT,exportedAt:now(),records},null,2),"ez-rma-backup-"+today()+".json","application/json");notify("Full local JSON backup downloaded.")};
 $("csvBtn").onclick=exportCsv;$("importBtn").onclick=()=>$("importFile").click();$("importFile").onchange=guard(async e=>{const file=e.target.files?.[0];if(file)await importFile(file);e.target.value=""});
-$("printBtn").onclick=()=>window.print();$("chatBtn").onclick=()=>showAssistant(null);$("caseAssistantBtn").onclick=()=>{const r=current();if(r)showAssistant(r)};
-$("exitAssistant").onclick=closeAssistantDialog;$("assistant").addEventListener("click",e=>{if(e.target===$("assistant"))closeAssistantDialog()});
-for(const key of ["aiTask","shareIssue","shareCase","shareCustomer","shareNotes"])$(key).addEventListener("change",()=>{previewAi();outboundPreview()});
-$("assistantQuestion").addEventListener("input",outboundPreview);
-$("assistantSend").onclick=sendAssistantMessage;$("assistantReset").onclick=clearAssistantChat;$("assistantToNote").onclick=assistantReplyToNote;
-$("copyOnly").onclick=()=>copyPrompt(false);$("openChat").onclick=()=>copyPrompt(true);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("assistant").hidden)closeAssistantDialog();else if(!$("editor").hidden)hideEditor()}})}
+$("printBtn").onclick=()=>window.print();
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("editor").hidden)hideEditor()})}
 async function start(){attach();try{db=await openStore();records=(await readAll()).map(normalize);render();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch{}
 try{const lb=Number(localStorage.getItem("ezRmaLastBackup")||0);if(records.length&&Date.now()-lb>30*86400000)notify("No backup in 30+ days. Data lives only in this browser, so use Backup JSON.")}catch{}}
