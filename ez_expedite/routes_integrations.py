@@ -191,7 +191,7 @@ def systems():
         f"""<h1>ERP / External Systems</h1>
         <div class='notice'>EZ Expedite can work immediately from flat-file/Excel/CSV exports. Direct API connections are configured only with real vendor endpoint and authentication information. No guessed ERP endpoints are built into the app.</div>
         <div class='panel'><form method='post' class='form'>
-        <label>Connection name<input name='name' placeholder='company JobBOSS2'></label>
+        <label>Connection name<input name='name' placeholder='ERP Connection'></label>
         <label>Provider<select name='provider'><option>JobBOSS2</option><option>Epicor</option><option>Plex</option><option>SAP</option><option>Other</option></select></label>
         <label>Mode<select name='mode'><option value='flat_file'>Excel / CSV flat file</option><option value='public_api'>Public API</option><option value='custom_rest'>Custom REST API</option><option value='database_view'>Read-only database/report view</option></select></label>
         <label>Base URL / endpoint root<input name='base_url' placeholder='Only when supplied by ERP vendor/admin'></label>
