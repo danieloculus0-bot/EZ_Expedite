@@ -1,6 +1,6 @@
 #define MyAppName "EZ Expedite"
 #define MyAppVersion "0.1.2"
-#define MyAppPublisher "company / company"
+#define MyAppPublisher "Independent Software"
 #define MyAppExeName "EZ_Expedite.exe"
 
 [Setup]
