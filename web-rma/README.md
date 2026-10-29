@@ -4,7 +4,7 @@ A static HTML/CSS/JavaScript RMA tracker based on EZ Expedite's staged manufactu
 
 ## Use
 - Open the hosted page, choose **New RMA**, fill out fields, save, and move through validated workflow stages.
-- Stages: Intake, product returned to company, Quality review, return to customer, complete, then verified closure.
+- Stages: Intake, product returned to Facility, Quality review, return to customer, complete, then verified closure.
 - A failed final inspection returns to Quality. Closure checks include ownership, disposition, required containment, corrective actions and recovery or waiver.
 - Search and filter the dashboard by case/customer/part/owner, or find overdue/stale cases.
 - **Backup JSON** preserves complete history. **Export CSV** creates a simple spreadsheet-compatible report. **Import** supports JSON backups and compatible CSV exports.
