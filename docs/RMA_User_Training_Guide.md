@@ -34,7 +34,7 @@ Customer Service
   Intake
       ↓
 Shipping
-  Product Returned to company
+  Product Returned to Facility
       ↓
 Quality
   RMA Review
@@ -50,7 +50,7 @@ Complete / Closure
 | Department | Stage | Primary action |
 | --- | --- | --- |
 | Customer Service | Intake | Enter RMA/customer/contact/defect information and advance |
-| Shipping | Product Returned to company | Confirm receipt and RMA hold-area placement |
+| Shipping | Product Returned to Facility | Confirm receipt and RMA hold-area placement |
 | Quality | RMA Review | Review product and document work-order requirements |
 | Shipping | Product Returned to Customer | Complete final inspection/shipping confirmations and advance |
 
@@ -94,7 +94,7 @@ The Teams notification contains the RMA details and an **Open RMA** link. The da
 
 ```text
 Intake
-  -> Product Returned to company
+  -> Product Returned to Facility
   -> RMA Review
   -> Product Returned to Customer
   -> Complete
@@ -103,7 +103,7 @@ Intake
 | Stage | Primary | Required action |
 | --- | --- | --- |
 | Intake | Customer Service | Enter RMA Number, defect, CSR, PO, customer/contact information and notes |
-| Product Returned to company | Shipping | Confirm receipt, receive date and RMA hold-area placement |
+| Product Returned to Facility | Shipping | Confirm receipt, receive date and RMA hold-area placement |
 | RMA Review | Quality | Review product and determine/record work-order requirements |
 | Product Returned to Customer | Shipping | Record final inspection result, shipping approval/readiness and shipment confirmation |
 | Complete | Closure | Complete normal closure requirements |
@@ -122,7 +122,7 @@ Intake
 
 Owns two stages.
 
-**Product Returned to company**
+**Product Returned to Facility**
 - Confirm product receipt
 - Verify receive date
 - Confirm RMA hold-area placement
@@ -189,7 +189,7 @@ Required:
 
 After **Complete / Advance**, the RMA routes to Shipping.
 
-## Stage 2 - Product Returned to company
+## Stage 2 - Product Returned to Facility
 
 Required:
 
@@ -256,7 +256,7 @@ The dashboard includes:
 
 ### Past-due aging heatmap
 
-The aging heatmap uses shades of the configured company / company blue only:
+The aging heatmap uses shades of the configured configured interface blue only:
 
 - 1-3 days
 - 4-7 days
