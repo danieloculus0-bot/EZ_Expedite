@@ -206,6 +206,22 @@ def main() -> None:
             assert all("ACTION REQUIRED" in msg for email, msg in routed if email.startswith("primary"))
             assert "READ ONLY" in next(msg for email, msg in routed if email == "readonly@example.com")
 
+            # Two delegate slots can point to the same mailbox; notify it only once.
+            duplicate_package = dict(package)
+            duplicate_package["delegates"] = [
+                {"name": "Primary One", "email": "primary1@example.com"},
+                {"name": "Primary Alias", "email": "PRIMARY1@example.com"},
+            ]
+            duplicate_package["cc"] = ["primary1@example.com", "readonly@example.com"]
+            duplicate_routed = []
+            assert deliver_notifications(
+                duplicate_package,
+                lambda recipient, message: duplicate_routed.append((recipient, message)),
+            ) == 0
+            assert [email for email, _ in duplicate_routed] == [
+                "primary1@example.com", "readonly@example.com"
+            ]
+
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
         print("EZ Expedite smoke test passed")
