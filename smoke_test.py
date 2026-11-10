@@ -222,6 +222,30 @@ def main() -> None:
                 "primary1@example.com", "readonly@example.com"
             ]
 
+        # A failing notification adapter must not prevent delivery to later recipients.
+        # This checks the actual callback contract, not external transport receipts.
+        attempted = []
+        def flaky_adapter(recipient, message):
+            attempted.append((recipient, message))
+            if recipient == "primary1@example.com":
+                raise RuntimeError("synthetic adapter failure")
+
+        failed_package = {
+            "delegates": [
+                {"email": "PRIMARY1@example.com"},
+                {"email": "primary1@example.com"},
+                {"email": "primary2@example.com"},
+            ],
+            "cc": ["primary2@example.com", "readonly@example.com"],
+            "primary_message": "ACTION REQUIRED",
+            "cc_message": "READ ONLY",
+        }
+        assert deliver_notifications(failed_package, flaky_adapter) == 1
+        assert [email for email, _ in attempted] == [
+            "primary1@example.com", "primary2@example.com", "readonly@example.com"
+        ]
+        assert attempted[-1][1] == "READ ONLY"
+
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
         print("EZ Expedite smoke test passed")
