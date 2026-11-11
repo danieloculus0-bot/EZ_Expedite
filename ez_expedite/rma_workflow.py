@@ -192,7 +192,7 @@ def deliver_notifications(package: dict, notify) -> int:
     primary_emails = set()
     for delegate in package.get("delegates", []):
         email = str(delegate.get("email") or "").strip().lower()
-        if not email:
+        if not email or email in primary_emails:
             continue
         primary_emails.add(email)
         try:

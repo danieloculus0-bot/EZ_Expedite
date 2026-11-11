@@ -206,6 +206,46 @@ def main() -> None:
             assert all("ACTION REQUIRED" in msg for email, msg in routed if email.startswith("primary"))
             assert "READ ONLY" in next(msg for email, msg in routed if email == "readonly@example.com")
 
+            # Two delegate slots can point to the same mailbox; notify it only once.
+            duplicate_package = dict(package)
+            duplicate_package["delegates"] = [
+                {"name": "Primary One", "email": "primary1@example.com"},
+                {"name": "Primary Alias", "email": "PRIMARY1@example.com"},
+            ]
+            duplicate_package["cc"] = ["primary1@example.com", "readonly@example.com"]
+            duplicate_routed = []
+            assert deliver_notifications(
+                duplicate_package,
+                lambda recipient, message: duplicate_routed.append((recipient, message)),
+            ) == 0
+            assert [email for email, _ in duplicate_routed] == [
+                "primary1@example.com", "readonly@example.com"
+            ]
+
+        # A failing notification adapter must not prevent delivery to later recipients.
+        # This checks the actual callback contract, not external transport receipts.
+        attempted = []
+        def flaky_adapter(recipient, message):
+            attempted.append((recipient, message))
+            if recipient == "primary1@example.com":
+                raise RuntimeError("synthetic adapter failure")
+
+        failed_package = {
+            "delegates": [
+                {"email": "PRIMARY1@example.com"},
+                {"email": "primary1@example.com"},
+                {"email": "primary2@example.com"},
+            ],
+            "cc": ["primary2@example.com", "readonly@example.com"],
+            "primary_message": "ACTION REQUIRED",
+            "cc_message": "READ ONLY",
+        }
+        assert deliver_notifications(failed_package, flaky_adapter) == 1
+        assert [email for email, _ in attempted] == [
+            "primary1@example.com", "primary2@example.com", "readonly@example.com"
+        ]
+        assert attempted[-1][1] == "READ ONLY"
+
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
         print("EZ Expedite smoke test passed")
