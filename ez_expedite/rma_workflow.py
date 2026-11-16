@@ -199,10 +199,15 @@ def deliver_notifications(package: dict, notify) -> int:
             notify(email, package.get("primary_message", ""))
         except Exception:
             errors += 1
+    # A CC recipient may appear multiple times (including case variants).
+    # Record attempted delivery before invoking the adapter so retries do not
+    # duplicate recipients within a single dispatch, even after an exception.
+    cc_emails = set()
     for email in package.get("cc", []):
         email = str(email or "").strip().lower()
-        if not email or email in primary_emails:
+        if not email or email in primary_emails or email in cc_emails:
             continue
+        cc_emails.add(email)
         try:
             notify(email, package.get("cc_message", ""))
         except Exception:
