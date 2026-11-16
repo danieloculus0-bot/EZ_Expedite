@@ -196,7 +196,8 @@ def deliver_notifications(package: dict, notify) -> int:
             continue
         primary_emails.add(email)
         try:
-            notify(email, package.get("primary_message", ""))
+            if notify(email, package.get("primary_message", "")) is False:
+                errors += 1
         except Exception:
             errors += 1
     # A CC recipient may appear multiple times (including case variants).
@@ -209,7 +210,8 @@ def deliver_notifications(package: dict, notify) -> int:
             continue
         cc_emails.add(email)
         try:
-            notify(email, package.get("cc_message", ""))
+            if notify(email, package.get("cc_message", "")) is False:
+                errors += 1
         except Exception:
             errors += 1
     return errors
