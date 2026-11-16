@@ -268,6 +268,18 @@ def main() -> None:
             ("copy2@example.com", "READ ONLY"),
         ]
 
+        # A transport may explicitly reject a send without raising. Report that
+        # failure while still attempting later recipients and preserving order.
+        rejected = []
+        def rejecting_adapter(recipient, message):
+            rejected.append(recipient)
+            return recipient != "primary1@example.com"
+
+        assert deliver_notifications(package, rejecting_adapter) == 1
+        assert rejected == [
+            "primary1@example.com", "primary2@example.com", "readonly@example.com"
+        ]
+
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
         print("EZ Expedite smoke test passed")
