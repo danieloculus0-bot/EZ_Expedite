@@ -212,7 +212,10 @@ def main() -> None:
                 {"name": "Primary One", "email": "primary1@example.com"},
                 {"name": "Primary Alias", "email": "PRIMARY1@example.com"},
             ]
-            duplicate_package["cc"] = ["primary1@example.com", "readonly@example.com"]
+            duplicate_package["cc"] = [
+                "primary1@example.com", "readonly@example.com",
+                "READONLY@example.com", " readonly@example.com ",
+            ]
             duplicate_routed = []
             assert deliver_notifications(
                 duplicate_package,
@@ -245,6 +248,25 @@ def main() -> None:
             "primary1@example.com", "primary2@example.com", "readonly@example.com"
         ]
         assert attempted[-1][1] == "READ ONLY"
+
+        # Duplicate CC addresses must be attempted once even when an adapter fails.
+        cc_attempts = []
+        cc_package = {
+            "delegates": [],
+            "cc": ["COPY@example.com", "copy@example.com", "copy2@example.com"],
+            "primary_message": "ACTION REQUIRED",
+            "cc_message": "READ ONLY",
+        }
+        def failing_cc(recipient, message):
+            cc_attempts.append((recipient, message))
+            if recipient == "copy@example.com":
+                raise RuntimeError("synthetic CC delivery failure")
+
+        assert deliver_notifications(cc_package, failing_cc) == 1
+        assert cc_attempts == [
+            ("copy@example.com", "READ ONLY"),
+            ("copy2@example.com", "READ ONLY"),
+        ]
 
         assert "Quality No." in RMA_NUMBER_ALIASES
         assert "RMA Number" in RMA_NUMBER_ALIASES
