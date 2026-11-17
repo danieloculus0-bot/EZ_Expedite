@@ -47,6 +47,19 @@ def overdue_rows(db_path: str | Path, as_of: date) -> list[dict]:
     return result
 
 
+def safe_csv_rows(rows: list[dict]) -> list[dict]:
+    """Prevent spreadsheet formula execution when a report is opened in Excel."""
+    safe = []
+    for row in rows:
+        item = dict(row)
+        for key in COLUMNS:
+            value = item.get(key, "")
+            if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+                item[key] = "'" + value
+        safe.append(item)
+    return safe
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Export overdue open occurrences as CSV")
     parser.add_argument("database", help="Existing EZ Expedite SQLite database")
@@ -55,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         as_of = date.fromisoformat(args.as_of)
-        rows = overdue_rows(args.database, as_of)
+        rows = safe_csv_rows(overdue_rows(args.database, as_of))
         if args.output:
             with open(args.output, "w", newline="", encoding="utf-8") as handle:
                 writer = csv.DictWriter(handle, fieldnames=COLUMNS)
