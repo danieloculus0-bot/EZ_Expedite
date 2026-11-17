@@ -47,6 +47,24 @@ class OverdueReportTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["days_overdue"], "7")
 
+    def test_csv_formula_injection_is_neutralized_without_mutating_source(self):
+        with sqlite3.connect(self.db) as con:
+            con.execute(
+                "UPDATE occurrences SET title=?, owner_name=?, next_action=? WHERE case_number='SYN-001'",
+                ("=HYPERLINK(\\\"https://invalid.example\\\")", "  +SUM(1,2)", "@cmd")
+            )
+        raw = overdue_rows(self.db, date(2026, 11, 17))[0]
+        self.assertTrue(raw["title"].startswith("="))
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main([str(self.db), "--as-of", "2026-11-17"]), 0)
+        exported = next(csv.DictReader(io.StringIO(output.getvalue())))
+        self.assertEqual(exported["title"], "'" + raw["title"])
+        self.assertEqual(exported["owner_name"], "'" + raw["owner_name"])
+        self.assertEqual(exported["next_action"], "'@cmd")
+        self.assertEqual(exported["days_overdue"], "7")
+        self.assertEqual(overdue_rows(self.db, date(2026, 11, 17))[0]["title"], raw["title"])
+
     def test_missing_database_does_not_create_file(self):
         missing = Path(self.tmp.name) / "missing.db"
         with self.assertRaises(FileNotFoundError):
