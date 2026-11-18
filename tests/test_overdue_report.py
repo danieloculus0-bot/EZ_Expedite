@@ -5,7 +5,7 @@ import io
 import sqlite3
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import closing, redirect_stdout
 from datetime import date
 from pathlib import Path
 
@@ -19,7 +19,7 @@ class OverdueReportTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.db = Path(self.tmp.name) / "occurrences.db"
         init_db(self.db)
-        with sqlite3.connect(self.db) as con:
+        with closing(sqlite3.connect(self.db)) as con, con:
             type_id = con.execute("SELECT id FROM occurrence_types WHERE name='RMA'").fetchone()[0]
             for number, due, status in (
                 ("SYN-001", "2026-11-10", "NEW"),
@@ -48,7 +48,7 @@ class OverdueReportTests(unittest.TestCase):
         self.assertEqual(records[0]["days_overdue"], "7")
 
     def test_csv_formula_injection_is_neutralized_without_mutating_source(self):
-        with sqlite3.connect(self.db) as con:
+        with closing(sqlite3.connect(self.db)) as con, con:
             con.execute(
                 "UPDATE occurrences SET title=?, owner_name=?, next_action=? WHERE case_number='SYN-001'",
                 ("=HYPERLINK(\\\"https://invalid.example\\\")", "  +SUM(1,2)", "@cmd")
@@ -72,7 +72,7 @@ class OverdueReportTests(unittest.TestCase):
         self.assertFalse(missing.exists())
 
     def test_invalid_date_rejected(self):
-        with sqlite3.connect(self.db) as con:
+        with closing(sqlite3.connect(self.db)) as con, con:
             con.execute("UPDATE occurrences SET due_date='bad-date' WHERE case_number='SYN-001'")
         with self.assertRaisesRegex(ValueError, "SYN-001"):
             overdue_rows(self.db, date(2026, 11, 17))
