@@ -6,6 +6,7 @@ No database initialization or mutation occurs.
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 import csv
 import sqlite3
 import sys
@@ -22,7 +23,7 @@ def overdue_rows(db_path: str | Path, as_of: date) -> list[dict]:
     if not path.is_file():
         raise FileNotFoundError(f"Database does not exist: {path}")
     # SQLite URI mode=ro prevents accidental database creation or writes.
-    with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as con:
+    with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as con:
         con.row_factory = sqlite3.Row
         records = con.execute(
             """SELECT case_number,title,status,owner_name,owner_email,due_date,next_action
