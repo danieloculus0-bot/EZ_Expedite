@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -236,7 +236,7 @@ def utcnow() -> str:
 def init_db(db_path: str | Path) -> None:
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(db_path) as con:
+    with closing(sqlite3.connect(db_path)) as con, con:
         con.executescript(SCHEMA)
         columns = {row[1] for row in con.execute("PRAGMA table_info(rma_details)").fetchall()}
         rma_migrations = {
