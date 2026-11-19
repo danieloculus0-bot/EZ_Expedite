@@ -40,11 +40,11 @@ class OwnerEscalationTests(unittest.TestCase):
     def test_aggregates_by_owner_and_excludes_closed_and_future(self):
         rows = owner_escalations(self.db, date(2026, 11, 19))
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]["unassigned"], "YES")
-        self.assertEqual(rows[0]["oldest_days_overdue"], 7)
-        self.assertEqual(rows[1]["overdue_cases"], 2)
-        self.assertEqual(rows[1]["oldest_days_overdue"], 9)
-        self.assertEqual(rows[1]["case_numbers"], "SYN-1; SYN-2")
+        self.assertEqual(rows[0]["overdue_cases"], 2)
+        self.assertEqual(rows[0]["oldest_days_overdue"], 9)
+        self.assertEqual(rows[0]["case_numbers"], "SYN-1; SYN-2")
+        self.assertEqual(rows[1]["unassigned"], "YES")
+        self.assertEqual(rows[1]["oldest_days_overdue"], 7)
 
     def test_cli_csv(self):
         out = io.StringIO()
@@ -52,7 +52,7 @@ class OwnerEscalationTests(unittest.TestCase):
             self.assertEqual(main([str(self.db), "--as-of", "2026-11-19"]), 0)
         rows = list(csv.DictReader(io.StringIO(out.getvalue())))
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[1]["overdue_cases"], "2")
+        self.assertEqual(rows[0]["overdue_cases"], "2")
 
     def test_formula_injection_neutralized(self):
         with closing(sqlite3.connect(self.db)) as con, con:
