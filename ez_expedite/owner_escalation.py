@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
-from .overdue_report import overdue_rows, safe_csv_rows
+from .overdue_report import overdue_rows
 
 COLUMNS = ("owner_name", "owner_email", "overdue_cases", "oldest_days_overdue",
            "case_numbers", "unassigned")
@@ -41,6 +41,18 @@ def owner_escalations(db_path: str | Path, as_of: date) -> list[dict]:
                                              item["owner_name"], item["owner_email"]))
 
 
+def safe_owner_rows(rows: list[dict]) -> list[dict]:
+    safe = []
+    for row in rows:
+        item = dict(row)
+        for key in COLUMNS:
+            value = item.get(key, "")
+            if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+                item[key] = "'" + value
+        safe.append(item)
+    return safe
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Export overdue occurrence escalation by owner")
     parser.add_argument("database", help="Existing EZ Expedite SQLite database")
@@ -48,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", help="CSV output path, otherwise stdout")
     args = parser.parse_args(argv)
     try:
-        rows = safe_csv_rows(owner_escalations(args.database, date.fromisoformat(args.as_of)))
+        rows = safe_owner_rows(owner_escalations(args.database, date.fromisoformat(args.as_of)))
         if args.output:
             with open(args.output, "w", newline="", encoding="utf-8") as stream:
                 writer = csv.DictWriter(stream, fieldnames=COLUMNS)
