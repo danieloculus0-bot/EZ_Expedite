@@ -1,0 +1,25 @@
+/* BEAN ecosystem design system v1: shared public navigation without altering local application UI */
+.bean-net{position:relative;z-index:900;isolation:isolate;background:#0b100e;color:#e8f4eb;border-bottom:1px solid #36523e;font:600 13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:normal;text-align:left}
+.bean-net,.bean-net *{box-sizing:border-box}.bean-net .bean-net-inner{width:min(1280px,calc(100% - 28px));margin:auto;min-height:49px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:7px 0}
+.bean-net a,.bean-net summary{font:inherit;color:#e8f4eb;text-decoration:none!important;padding:7px 9px;border-radius:7px;white-space:nowrap;display:inline-flex;align-items:center;min-height:34px}
+.bean-net .bean-net-home{color:#b8ef90!important;font-weight:900;letter-spacing:.055em;padding-left:0}.bean-net .bean-net-links{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-left:auto}
+.bean-net a:hover,.bean-net summary:hover{background:#263c2d;color:#fff!important}.bean-net a:focus-visible,.bean-net summary:focus-visible{outline:2px solid #b8ef90;outline-offset:2px}
+.bean-net .bean-net-update{border:1px solid #405f47;color:#b8ef90!important}.bean-net details{position:relative}.bean-net summary{cursor:pointer;list-style:none}.bean-net summary::-webkit-details-marker{display:none}
+.bean-net .bean-net-menu{position:absolute;right:0;top:100%;z-index:901;background:#132019;border:1px solid #446b4e;border-radius:11px;box-shadow:0 18px 44px #000b;width:max-content;max-width:min(350px,calc(100vw - 24px));min-width:210px;padding:8px;display:grid;gap:2px}
+.bean-net details:not([open]) .bean-net-menu{display:none}.bean-net .bean-net-menu a{display:block;white-space:normal;padding:9px 12px}
+@media(max-width:750px){.bean-net .bean-net-inner{gap:3px}.bean-net .bean-net-links{margin-left:0;gap:1px}.bean-net a,.bean-net summary{font-size:12px;padding:6px 7px;min-height:30px}.bean-net .bean-net-menu{right:0;max-height:62vh;overflow:auto}}
+/* For fullscreen games, keep the escape link small and out of the main gameplay layout. */
+.bean-net-float{position:fixed;z-index:999998;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));background:#0b100ef2;border:1px solid #486c50;border-radius:10px;box-shadow:0 5px 20px #0009;font:700 12px/1.4 system-ui,sans-serif;padding:5px 7px;color:#e8f4eb;display:flex;align-items:center;gap:4px}
+.bean-net-float a,.bean-net-float summary{color:#b8ef90!important;text-decoration:none!important;display:inline-block;padding:6px;border-radius:5px;cursor:pointer;font:inherit;white-space:nowrap}
+.bean-net-float a:focus-visible,.bean-net-float summary:focus-visible{outline:2px solid #b8ef90}.bean-net-float details{position:relative}.bean-net-float summary{list-style:none}.bean-net-float summary::-webkit-details-marker{display:none}
+.bean-net-float details>div{position:absolute;right:0;top:100%;width:215px;max-height:65vh;overflow:auto;padding:7px;background:#111c16;border:1px solid #486c50;border-radius:9px;display:grid;gap:2px;box-shadow:0 12px 28px #000b}
+.bean-net-float details:not([open])>div{display:none}
+
+/* Contextual source-backed release notes are part of content, not the global toolbar. */
+.bean-build-feature{box-sizing:border-box;width:min(1110px,calc(100% - 40px));margin:26px auto 36px;padding:24px 28px;background:#111714;border:1px solid #293a30;border-radius:14px;color:#edf4ed;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+.bean-build-feature *{box-sizing:border-box}.bean-build-feature-label{color:#b8ef90;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.13em}
+.bean-build-feature h2{color:#f1f6f1;margin:6px 0 10px;font-size:clamp(22px,3vw,30px);line-height:1.2;letter-spacing:-.025em}
+.bean-build-feature p{color:#bdcbbf;max-width:920px;margin:0 0 15px}.bean-build-feature-links{display:flex;gap:11px 19px;flex-wrap:wrap}
+.bean-build-feature a{color:#b8ef90;text-decoration:underline;text-underline-offset:3px;font-weight:720}
+.bean-build-feature a:focus-visible{outline:2px solid #b8ef90;outline-offset:3px}
+@media(max-width:600px){.bean-build-feature{padding:18px 20px;width:calc(100% - 28px)}}
